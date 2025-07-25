@@ -551,39 +551,70 @@ export function FlowEditor() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                      <div className="text-xs text-muted-foreground">
-                        {flow.nodes.length} modules, {flow.edges.length} connections
-                      </div>
-                      {flow.deployedAt && (
-                        <div className="text-xs text-muted-foreground">
-                          Deployed: {new Date(flow.deployedAt).toLocaleString()}
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="text-muted-foreground">
+                          <span className="font-medium">Modules:</span> {flow.nodes.length}
                         </div>
-                      )}
-                      <div className="flex gap-2 flex-wrap">
-                        <Button 
-                          onClick={() => selectFlow(flow)} 
-                          variant="outline" 
-                          size="sm"
-                        >
-                          <Edit className="h-3 w-3 mr-1" />
-                          Edit
-                        </Button>
-                        <Button 
-                          onClick={() => startPipeline(flow.id)}
-                          variant={flow.isRunning ? "destructive" : "default"}
-                          size="sm"
-                        >
-                          <Play className="h-3 w-3 mr-1" />
-                          {flow.isRunning ? 'Stop' : 'Start'}
-                        </Button>
-                        <Button 
-                          onClick={() => deployFlow(flow.id)}
-                          variant={flow.isDeployed ? "outline" : "default"}
-                          size="sm"
-                        >
-                          <Rocket className="h-3 w-3 mr-1" />
-                          {flow.isDeployed ? 'Undeploy' : 'Deploy'}
-                        </Button>
+                        <div className="text-muted-foreground">
+                          <span className="font-medium">Connections:</span> {flow.edges.length}
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <div className="text-xs text-muted-foreground">
+                          <span className="font-medium">Status:</span>
+                          <Badge variant={flow.isRunning ? "default" : "secondary"} className="ml-2 text-xs">
+                            {flow.isRunning ? 'Running' : 'Stopped'}
+                          </Badge>
+                        </div>
+                        
+                        <div className="text-xs text-muted-foreground">
+                          <span className="font-medium">Deployment:</span>
+                          {flow.isDeployed ? (
+                            <div className="mt-1">
+                              <Badge variant="outline" className="text-accent-foreground border-accent text-xs">
+                                Deployed
+                              </Badge>
+                              {flow.deployedAt && (
+                                <div className="text-xs text-muted-foreground mt-1">
+                                  {new Date(flow.deployedAt).toLocaleString()}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="ml-2 text-muted-foreground">Not deployed</span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="pt-2 border-t border-border">
+                        <div className="text-xs font-medium text-foreground mb-2">Actions:</div>
+                        <div className="flex gap-2 flex-wrap">
+                          <Button 
+                            onClick={() => selectFlow(flow)} 
+                            variant="outline" 
+                            size="sm"
+                          >
+                            <Edit className="h-3 w-3 mr-1" />
+                            Edit
+                          </Button>
+                          <Button 
+                            onClick={() => startPipeline(flow.id)}
+                            variant={flow.isRunning ? "destructive" : "default"}
+                            size="sm"
+                          >
+                            <Play className="h-3 w-3 mr-1" />
+                            {flow.isRunning ? 'Stop' : 'Start'}
+                          </Button>
+                          <Button 
+                            onClick={() => deployFlow(flow.id)}
+                            variant={flow.isDeployed ? "outline" : "default"}
+                            size="sm"
+                          >
+                            <Rocket className="h-3 w-3 mr-1" />
+                            {flow.isDeployed ? 'Undeploy' : 'Deploy'}
+                          </Button>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
