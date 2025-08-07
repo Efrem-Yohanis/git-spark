@@ -221,41 +221,41 @@ export function FlowEditor() {
     // Generate unique canvas node ID
     const canvasNodeId = `node-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     
-    try {
-      // Calculate order (auto-incremented)
-      const order = nodes.length + 1;
-      
-      // Determine if this is a start node (first node with no connections)
-      const fromNode = nodes.length === 0 ? null : null; // Will be set when connections are made
-      
-      // Create visual node for canvas
-      const newNode: Node<NodeData> = {
-        id: canvasNodeId,
-        type: 'custom',
-        position: { x: Math.random() * 300 + 200, y: Math.random() * 200 + 150 },
-        data: {
-          label: deployedNode?.name || `Node ${deployedNodeId}`,
-          icon: Database,
-          description: deployedNode?.description || 'Deployed node from API',
-          config: {},
-          connector: 'Default',
-          connectorOptions: ['Default'],
-          deployedNodeId, // Store the original deployed node ID
-        },
+    // Calculate order (auto-incremented)
+    const order = nodes.length + 1;
+    
+    // Determine if this is a start node (first node with no connections)
+    const fromNode = nodes.length === 0 ? null : null; // Will be set when connections are made
+    
+    // Create visual node for canvas
+    const newNode: Node<NodeData> = {
+      id: canvasNodeId,
+      type: 'custom',
+      position: { x: Math.random() * 300 + 200, y: Math.random() * 200 + 150 },
+      data: {
+        label: deployedNode?.name || `Node ${deployedNodeId}`,
+        icon: Database,
+        description: deployedNode?.description || 'Deployed node from API',
+        config: {},
+        connector: 'Default',
+        connectorOptions: ['Default'],
+        deployedNodeId, // Store the original deployed node ID
+      },
+    };
+
+    // Update visual state first
+    setNodes((prev) => [...prev, newNode]);
+
+    // Send API request to add node to flow
+    if (flowId) {
+      const payload = {
+        flow: flowId,
+        node: deployedNodeId, // Use the deployed node ID for API
+        order,
+        from_node: fromNode
       };
 
-      // Update visual state first
-      setNodes((prev) => [...prev, newNode]);
-
-      // Send API request to add node to flow
-      if (flowId) {
-        const payload = {
-          flow: flowId,
-          node: deployedNodeId, // Use the deployed node ID for API
-          order,
-          from_node: fromNode
-        };
-
+      try {
         console.log('Adding node to flow with payload:', payload);
         await flowService.addNodeToFlow(payload);
         
@@ -263,18 +263,21 @@ export function FlowEditor() {
           title: "Node Added",
           description: `${newNode.data.label} has been added to the flow successfully.`,
         });
+      } catch (error: any) {
+        console.error('Error adding node to flow:', error);
+        console.error('Error response data:', error.response?.data);
+        console.error('Error status:', error.response?.status);
+        console.error('Payload that was sent:', payload);
+        
+        // Revert visual changes on API error
+        setNodes((prev) => prev.filter(node => node.id !== canvasNodeId));
+        
+        toast({
+          title: "Error",
+          description: `Failed to add node to flow: ${error.response?.data?.detail || error.message}`,
+          variant: "destructive"
+        });
       }
-    } catch (error) {
-      console.error('Error adding node to flow:', error);
-      
-      // Revert visual changes on API error
-      setNodes((prev) => prev.filter(node => node.id !== canvasNodeId));
-      
-      toast({
-        title: "Error",
-        description: "Failed to add node to flow.",
-        variant: "destructive"
-      });
     }
   };
 
