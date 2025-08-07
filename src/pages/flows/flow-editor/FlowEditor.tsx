@@ -171,8 +171,8 @@ export function FlowEditor() {
           const targetNodeOrder = nodes.findIndex(node => node.id === params.target) + 1;
           
           await flowService.addNodeToFlow({
-            flow: flowId,
-            node: params.target, // This should be the actual node ID from API
+            flow_id: flowId,
+            node_id: params.target, // This should be the actual node ID from API
             order: targetNodeOrder,
             from_node: params.source // Set the source node for connection
           });
@@ -249,8 +249,8 @@ export function FlowEditor() {
     // Send API request to add node to flow
     if (flowId) {
       const payload = {
-        flow: flowId,
-        node: deployedNodeId, // Use the deployed node ID for API
+        flow_id: flowId,
+        node_id: deployedNodeId, // Use the deployed node ID for API
         order,
         from_node: fromNode
       };
