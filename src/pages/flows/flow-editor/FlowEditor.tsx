@@ -143,9 +143,60 @@ export function FlowEditor() {
     ));
   }, [currentFlow.id, nodes, edges]);
 
+  // Handle node connection with API integration
   const onConnect = useCallback(
-    (params: Connection) => setEdges((eds) => addEdge(params, eds)),
-    [setEdges]
+    async (params: Connection) => {
+      if (!params.source || !params.target) return;
+      
+      // Check for duplicate connections
+      const existingEdge = edges.find(edge => 
+        edge.source === params.source && edge.target === params.target
+      );
+      
+      if (existingEdge) {
+        toast({
+          title: "Connection Exists",
+          description: "A connection between these nodes already exists.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Update visual edges
+      setEdges((eds) => addEdge(params, eds));
+
+      // Send API request for connection
+      if (flowId) {
+        try {
+          const targetNodeOrder = nodes.findIndex(node => node.id === params.target) + 1;
+          
+          await flowService.addNodeToFlow({
+            flow: flowId,
+            node: params.target, // This should be the actual node ID from API
+            order: targetNodeOrder,
+            from_node: params.source // Set the source node for connection
+          });
+
+          toast({
+            title: "Nodes Connected",
+            description: "Nodes have been connected successfully.",
+          });
+        } catch (error) {
+          console.error('Error connecting nodes:', error);
+          // Revert the visual connection on API error
+          setEdges((eds) => eds.filter(edge => 
+            !(edge.source === params.source && edge.target === params.target)
+          ));
+          
+          toast({
+            title: "Connection Failed",
+            description: "Failed to connect nodes via API.",
+            variant: "destructive"
+          });
+        }
+      }
+    },
+    [setEdges, edges, nodes, flowId, toast]
   );
 
   // Handle connector selection
@@ -165,40 +216,59 @@ export function FlowEditor() {
     );
   }, [setNodes]);
 
-  // Add node to canvas from API data
-  const addNodeToCanvas = async (nodeId: string) => {
+  // Add node to canvas from API data with auto-generation logic
+  const addNodeToCanvas = async (deployedNodeId: string, deployedNode?: any) => {
+    // Generate unique canvas node ID
+    const canvasNodeId = `node-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
     try {
-      // Create a visual node for the canvas
+      // Calculate order (auto-incremented)
+      const order = nodes.length + 1;
+      
+      // Determine if this is a start node (first node with no connections)
+      const fromNode = nodes.length === 0 ? null : null; // Will be set when connections are made
+      
+      // Create visual node for canvas
       const newNode: Node<NodeData> = {
-        id: `canvas-node-${Date.now()}`,
+        id: canvasNodeId,
         type: 'custom',
         position: { x: Math.random() * 300 + 200, y: Math.random() * 200 + 150 },
         data: {
-          label: `Node ${nodeId}`,
+          label: deployedNode?.name || `Node ${deployedNodeId}`,
           icon: Database,
-          description: 'Deployed node from API',
+          description: deployedNode?.description || 'Deployed node from API',
           config: {},
           connector: 'Default',
-          connectorOptions: ['Default']
+          connectorOptions: ['Default'],
+          deployedNodeId, // Store the original deployed node ID
         },
       };
+
+      // Update visual state first
       setNodes((prev) => [...prev, newNode]);
 
-      // Add to flow via API
+      // Send API request to add node to flow
       if (flowId) {
-        await flowService.addNodeToFlow({
+        const payload = {
           flow: flowId,
-          node: nodeId,
-          order: nodes.length + 1
-        });
+          node: deployedNodeId, // Use the deployed node ID for API
+          order,
+          from_node: fromNode
+        };
+
+        await flowService.addNodeToFlow(payload);
         
         toast({
           title: "Node Added",
-          description: "Node has been added to the flow successfully.",
+          description: `${newNode.data.label} has been added to the flow successfully.`,
         });
       }
     } catch (error) {
       console.error('Error adding node to flow:', error);
+      
+      // Revert visual changes on API error
+      setNodes((prev) => prev.filter(node => node.id !== canvasNodeId));
+      
       toast({
         title: "Error",
         description: "Failed to add node to flow.",
@@ -718,7 +788,9 @@ export function FlowEditor() {
         <CardContent>
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
             <div className="lg:col-span-1">
-              <NodePalette onAddNode={addNodeToCanvas} />
+              <NodePalette 
+                onAddNode={addNodeToCanvas} 
+              />
             </div>
 
             <div className="lg:col-span-3">

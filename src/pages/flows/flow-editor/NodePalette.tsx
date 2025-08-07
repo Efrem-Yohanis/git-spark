@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 
 interface NodePaletteProps {
-  onAddNode: (nodeId: string) => void;
+  onAddNode: (nodeId: string, nodeData?: any) => void;
 }
 
 // Icon mapping for different node types
@@ -164,7 +164,7 @@ export function NodePalette({ onAddNode }: NodePaletteProps) {
                     </div>
                   </div>
                   <Button
-                    onClick={() => onAddNode(node.id)}
+                    onClick={() => onAddNode(node.id, node)}
                     size="sm"
                     variant="ghost"
                     className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
