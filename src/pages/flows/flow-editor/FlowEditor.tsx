@@ -256,6 +256,7 @@ export function FlowEditor() {
           from_node: fromNode
         };
 
+        console.log('Adding node to flow with payload:', payload);
         await flowService.addNodeToFlow(payload);
         
         toast({
