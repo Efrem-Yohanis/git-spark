@@ -84,11 +84,7 @@ export const flowService = {
 
   // Add node to flow
   async addNodeToFlow(data: { flow: string; node: string; order: number; from_node?: string | null }): Promise<FlowNode> {
-    const response = await axiosInstance.post(`flows/${data.flow}/nodes/`, {
-      node: data.node,
-      order: data.order,
-      from_node: data.from_node
-    });
+    const response = await axiosInstance.post('flownodes/', data);
     return response.data;
   },
 
