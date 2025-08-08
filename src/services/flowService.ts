@@ -68,24 +68,89 @@ export interface DeployedNode {
   subnodes: Subnode[];
 }
 
+// Mock data for deployed nodes
+const mockDeployedNodes: DeployedNode[] = [
+  {
+    id: 'node-1',
+    name: 'SFTP Collector Node',
+    subnodes: [
+      { id: 'sub1', name: 'Connection Handler', parameters: [], is_selected: true },
+      { id: 'sub2', name: 'File Scanner', parameters: [], is_selected: false },
+    ]
+  },
+  {
+    id: 'node-2', 
+    name: 'ASN.1 Decoder Node',
+    subnodes: [
+      { id: 'sub3', name: 'Schema Loader', parameters: [], is_selected: true },
+      { id: 'sub4', name: 'Data Parser', parameters: [], is_selected: false },
+    ]
+  },
+  {
+    id: 'node-3',
+    name: 'Validation BLN Node', 
+    subnodes: [
+      { id: 'sub5', name: 'Rule Engine', parameters: [], is_selected: true },
+      { id: 'sub6', name: 'Quality Check', parameters: [], is_selected: false },
+    ]
+  }
+];
+
 // API Service Functions
 export const flowService = {
   // Create a new flow
   async createFlow(data: { name: string; description: string }): Promise<Flow> {
-    const response = await axiosInstance.post('flows/', data);
-    return response.data;
+    // Mock implementation
+    await new Promise(resolve => setTimeout(resolve, 300));
+    const newFlow: Flow = {
+      id: Date.now().toString(),
+      name: data.name,
+      description: data.description,
+      is_deployed: false,
+      is_running: false,
+      flow_nodes: [],
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      created_by: 'user'
+    };
+    return newFlow;
   },
 
   // Get deployed nodes for flow editor
   async getDeployedNodes(): Promise<DeployedNode[]> {
-    const response = await axiosInstance.get('nodes/');
-    return response.data;
+    // Mock implementation - simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+    return [...mockDeployedNodes];
   },
 
   // Add node to flow
-  async addNodeToFlow(data: { flow_id: string; node_id: string; order: number; from_node?: string | null }): Promise<FlowNode> {
-    const response = await axiosInstance.post('flownodes/', data);
-    return response.data;
+  async addNodeToFlow(data: { flow: string; node: string; order: number }): Promise<FlowNode> {
+    // Mock implementation - simulate successful addition
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    const deployedNode = mockDeployedNodes.find(n => n.id === data.node);
+    if (!deployedNode) {
+      throw new Error('Node not found');
+    }
+    
+    const newFlowNode: FlowNode = {
+      id: `flow-node-${Date.now()}`,
+      order: data.order,
+      node: {
+        id: deployedNode.id,
+        name: deployedNode.name,
+        subnodes: deployedNode.subnodes
+      },
+      selected_subnode: deployedNode.subnodes.find(s => s.is_selected) ? {
+        id: deployedNode.subnodes.find(s => s.is_selected)!.id,
+        name: deployedNode.subnodes.find(s => s.is_selected)!.name,
+        parameter_values: []
+      } : undefined,
+      outgoing_edges: []
+    };
+    
+    console.log('Successfully added node to flow:', newFlowNode);
+    return newFlowNode;
   },
 
   // Get flow details
@@ -121,6 +186,14 @@ export const flowService = {
   // Undeploy flow
   async undeployFlow(id: string): Promise<{ status: string }> {
     const response = await axiosInstance.post(`flows/${id}/undeploy/`);
+    return response.data;
+  },
+
+  // Update node connection (from_node field)
+  async updateNodeConnection(flowNodeId: string, fromNodeId: string | null): Promise<FlowNode> {
+    const response = await axiosInstance.patch(`flownode/${flowNodeId}/`, {
+      from_node: fromNodeId
+    });
     return response.data;
   },
 };

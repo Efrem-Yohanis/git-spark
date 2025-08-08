@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 
 interface NodePaletteProps {
-  onAddNode: (nodeId: string, nodeData?: any) => void;
+  onAddNode: (nodeId: string) => void;
 }
 
 // Icon mapping for different node types
@@ -125,7 +125,12 @@ export function NodePalette({ onAddNode }: NodePaletteProps) {
             return (
               <div
                 key={node.id}
-                className="group border border-border rounded-lg p-3 hover:bg-muted/50 transition-colors"
+                className="group border border-border rounded-lg p-3 hover:bg-muted/50 transition-colors cursor-grab active:cursor-grabbing"
+                draggable
+                onDragStart={(event) => {
+                  event.dataTransfer.setData('application/reactflow', node.id);
+                  event.dataTransfer.effectAllowed = 'move';
+                }}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-start gap-2 flex-1">
@@ -164,7 +169,7 @@ export function NodePalette({ onAddNode }: NodePaletteProps) {
                     </div>
                   </div>
                   <Button
-                    onClick={() => onAddNode(node.id, node)}
+                    onClick={() => onAddNode(node.id)}
                     size="sm"
                     variant="ghost"
                     className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
