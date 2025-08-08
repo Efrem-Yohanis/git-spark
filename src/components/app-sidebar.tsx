@@ -26,7 +26,6 @@ const items = [
   { title: "Nodes", url: "/nodes", icon: Network },
   { title: "Subnodes", url: "/subnodes", icon: GitFork },
   { title: "Parameters", url: "/parameters", icon: Settings },
-  { title: "Edges", url: "/edges", icon: GitCommitHorizontal },
 ];
 
 export function AppSidebar() {
