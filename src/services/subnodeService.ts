@@ -20,6 +20,7 @@ export interface SubnodeListItem {
   name: string;
   is_selected: boolean;
   node: string;
+  is_deployed?: boolean;
 }
 
 export interface SubnodeDetail {
@@ -32,12 +33,29 @@ export interface SubnodeDetail {
   name: string;
   is_selected: boolean;
   node: string;
+  is_deployed?: boolean;
+  version_comment?: string;
+  created_by?: string;
 }
 
 export interface SubnodeVersion {
   id: string;
-  name: string;
   version: number;
+  is_active: boolean;
+  created_by: string;
+  created_at: string;
+  description?: string;
+  version_comment?: string;
+}
+
+export interface CreateSubnodeRequest {
+  version?: number | null;
+  created_by?: string;
+  last_updated_by?: string;
+  version_comment?: string;
+  name: string;
+  is_selected?: boolean;
+  node: string | null;
 }
 
 export interface ParameterValueRequest {
@@ -46,8 +64,21 @@ export interface ParameterValueRequest {
 }
 
 export interface ParameterValueResponse {
-  status: string;
-  parameter_value_id: string;
+  id: string;
+  parameter: string;
+  subnode: string;
+  value: string;
+  last_updated_by: string;
+  last_updated_at: string;
+}
+
+export interface ActivateVersionRequest {
+  version: number;
+}
+
+export interface CloneSubnodeRequest {
+  name?: string;
+  [key: string]: any;
 }
 
 // API Service Functions
@@ -64,39 +95,39 @@ export const subnodeService = {
     return response.data;
   },
 
-  // Update subnode
+  // Update subnode (PATCH)
   async updateSubnode(id: string, data: Partial<SubnodeDetail>): Promise<SubnodeDetail> {
-    const response = await axiosInstance.put(`subnodes/${id}/`, data);
+    const response = await axiosInstance.patch(`subnodes/${id}/`, data);
     return response.data;
   },
 
-  // Delete subnode
+  // Delete subnode (all versions)
   async deleteSubnode(id: string): Promise<{ detail: string }> {
     const response = await axiosInstance.delete(`subnodes/${id}/`);
     return response.data;
   },
 
   // Create new subnode
-  async createSubnode(data: Partial<SubnodeDetail>): Promise<SubnodeDetail> {
+  async createSubnode(data: CreateSubnodeRequest): Promise<SubnodeDetail> {
     const response = await axiosInstance.post('subnodes/', data);
     return response.data;
   },
 
+  // Update parameter value in subnode
+  async updateParameterValue(subnodeId: string, parameterData: ParameterValueRequest): Promise<ParameterValueResponse> {
+    const response = await axiosInstance.post(`subnodes/${subnodeId}/parameter_values/`, parameterData);
+    return response.data;
+  },
+
   // Deploy subnode
-  async deploySubnode(id: string): Promise<{ status: string }> {
+  async deploySubnode(id: string): Promise<{ detail: string }> {
     const response = await axiosInstance.post(`subnodes/${id}/deploy/`);
     return response.data;
   },
 
   // Undeploy subnode
-  async undeploySubnode(id: string): Promise<{ status: string }> {
+  async undeploySubnode(id: string): Promise<{ detail: string }> {
     const response = await axiosInstance.post(`subnodes/${id}/undeploy/`);
-    return response.data;
-  },
-
-  // Add or update parameter value
-  async updateParameterValue(id: string, parameterData: ParameterValueRequest): Promise<ParameterValueResponse> {
-    const response = await axiosInstance.post(`subnodes/${id}/parameter_values/`, parameterData);
     return response.data;
   },
 
@@ -106,9 +137,39 @@ export const subnodeService = {
     return response.data;
   },
 
+  // Create new version of subnode
+  async createSubnodeVersion(id: string): Promise<SubnodeVersion> {
+    const response = await axiosInstance.post(`subnodes/${id}/create_version/`);
+    return response.data;
+  },
+
   // Activate specific version
-  async activateVersion(id: string, version: number): Promise<SubnodeDetail> {
-    const response = await axiosInstance.post(`subnodes/${id}/activate_version/${version}/`);
+  async activateVersion(id: string, data: ActivateVersionRequest): Promise<{ id: string; version: number; is_active: boolean }> {
+    const response = await axiosInstance.post(`subnodes/${id}/activate/`, data);
+    return response.data;
+  },
+
+  // Export subnode
+  async exportSubnode(id: string): Promise<any> {
+    const response = await axiosInstance.get(`subnodes/${id}/export/`);
+    return response.data;
+  },
+
+  // Import subnode
+  async importSubnode(data: any): Promise<SubnodeDetail> {
+    const response = await axiosInstance.post('subnodes/import/', data);
+    return response.data;
+  },
+
+  // Clone subnode
+  async cloneSubnode(id: string, data?: CloneSubnodeRequest): Promise<SubnodeDetail> {
+    const response = await axiosInstance.post(`subnodes/${id}/clone/`, data || {});
+    return response.data;
+  },
+
+  // Delete specific version
+  async deleteSubnodeVersion(id: string, version: number): Promise<{ detail: string }> {
+    const response = await axiosInstance.delete(`subnodes/${id}/versions/${version}/`);
     return response.data;
   },
 };

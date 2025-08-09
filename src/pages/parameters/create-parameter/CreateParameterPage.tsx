@@ -21,6 +21,7 @@ export function CreateParameterPage() {
     default_value: "",
     required: true,
     node: "",
+    datatype: "",
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -43,7 +44,7 @@ export function CreateParameterPage() {
         key: formData.key,
         default_value: formData.default_value,
         required: formData.required,
-        node: formData.node,
+        datatype: formData.datatype || "string",
       });
 
       toast({
@@ -135,6 +136,28 @@ export function CreateParameterPage() {
                       {node.name} ({node.id})
                     </SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="datatype">Data Type</Label>
+              <Select 
+                value={formData.datatype} 
+                onValueChange={(value) => handleInputChange("datatype", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select data type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="string">String</SelectItem>
+                  <SelectItem value="integer">Integer</SelectItem>
+                  <SelectItem value="float">Float</SelectItem>
+                  <SelectItem value="boolean">Boolean</SelectItem>
+                  <SelectItem value="date">Date</SelectItem>
+                  <SelectItem value="datetime">DateTime</SelectItem>
+                  <SelectItem value="json">JSON</SelectItem>
+                  <SelectItem value="file">File</SelectItem>
                 </SelectContent>
               </Select>
             </div>

@@ -41,7 +41,7 @@ export function ParametersPage() {
         key: `${param.key}_copy`,
         default_value: param.default_value,
         required: param.required,
-        node: param.node
+        datatype: param.datatype
       });
       toast({
         title: "Parameter cloned successfully",
@@ -131,27 +131,8 @@ export function ParametersPage() {
               <CardContent className="space-y-3">
                 <div className="grid grid-cols-1 gap-2 text-xs">
                   <div className="text-muted-foreground">
-                    <span className="font-medium">Default Value:</span> 
-                    <span className="ml-1 font-mono">{param.default_value}</span>
-                  </div>
-                  <div className="text-muted-foreground">
-                    <span className="font-medium">Node ID:</span>
-                    <Button 
-                      variant="link" 
-                      className="h-auto p-0 ml-1 text-xs"
-                      onClick={() => navigate(`/nodes/${param.node}`)}
-                    >
-                      {param.node}
-                    </Button>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div className="text-muted-foreground">
-                    <span className="font-medium">Updated:</span> {new Date(param.last_updated_at).toLocaleDateString()}
-                  </div>
-                  <div className="text-muted-foreground">
-                    <span className="font-medium">By:</span> {param.last_updated_by || 'System'}
+                    <span className="font-medium">Data Type:</span> 
+                    <span className="ml-1 font-mono">{param.datatype}</span>
                   </div>
                 </div>
                 
@@ -199,10 +180,8 @@ export function ParametersPage() {
               <TableRow>
                 <TableHead>Key</TableHead>
                 <TableHead>Default Value</TableHead>
+                <TableHead>Data Type</TableHead>
                 <TableHead>Required</TableHead>
-                <TableHead>Node ID</TableHead>
-                <TableHead>Updated By</TableHead>
-                <TableHead>Updated At</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -220,21 +199,15 @@ export function ParametersPage() {
                   </TableCell>
                   <TableCell>{param.default_value}</TableCell>
                   <TableCell>
+                    <Badge variant="outline">
+                      {param.datatype || 'Not Set'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
                     <Badge variant={param.required ? "default" : "secondary"}>
                       {param.required ? "Required" : "Optional"}
                     </Badge>
                   </TableCell>
-                  <TableCell>
-                    <Button 
-                      variant="link" 
-                      className="h-auto p-0"
-                      onClick={() => navigate(`/nodes/${param.node}`)}
-                    >
-                      {param.node}
-                    </Button>
-                  </TableCell>
-                  <TableCell>{param.last_updated_by || 'System'}</TableCell>
-                  <TableCell>{new Date(param.last_updated_at).toLocaleDateString()}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end space-x-2">
                       <Button 

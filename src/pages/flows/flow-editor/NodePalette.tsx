@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useDeployedNodes } from '@/services/flowService';
+import { useNodes } from '@/services/nodeService';
 import { 
   Database, 
   Filter, 
@@ -50,7 +50,7 @@ const getNodeColor = (nodeName: string) => {
 };
 
 export function NodePalette({ onAddNode }: NodePaletteProps) {
-  const { data: deployedNodes, loading, error, refetch } = useDeployedNodes();
+  const { data: nodes, loading, error, refetch } = useNodes();
 
   if (loading) {
     return (
@@ -103,22 +103,22 @@ export function NodePalette({ onAddNode }: NodePaletteProps) {
           <Database className="h-5 w-5" />
           Available Nodes
           <Badge variant="secondary" className="ml-auto">
-            {deployedNodes.length}
+            {nodes.length}
           </Badge>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">
-        {deployedNodes.length === 0 ? (
+        {nodes.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-sm text-muted-foreground">
-              No deployed nodes available
+              No nodes available
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              Deploy some nodes first to use them in flows
+              Create and deploy some nodes first to use them in flows
             </p>
           </div>
         ) : (
-          deployedNodes.map((node) => {
+          nodes.map((node) => {
             const Icon = getNodeIcon(node.name);
             const colorClass = getNodeColor(node.name);
             
@@ -144,28 +144,6 @@ export function NodePalette({ onAddNode }: NodePaletteProps) {
                       <p className="text-xs text-muted-foreground">
                         {node.subnodes.length} subnode{node.subnodes.length !== 1 ? 's' : ''}
                       </p>
-                      {node.subnodes.length > 0 && (
-                        <div className="mt-1 space-y-1">
-                          {node.subnodes.slice(0, 2).map((subnode) => (
-                            <div key={subnode.id} className="flex items-center gap-1">
-                              <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50" />
-                              <span className="text-xs text-muted-foreground truncate">
-                                {subnode.name}
-                              </span>
-                              {subnode.is_selected && (
-                                <Badge variant="secondary" className="text-xs px-1 py-0">
-                                  Selected
-                                </Badge>
-                              )}
-                            </div>
-                          ))}
-                          {node.subnodes.length > 2 && (
-                            <p className="text-xs text-muted-foreground">
-                              +{node.subnodes.length - 2} more
-                            </p>
-                          )}
-                        </div>
-                      )}
                     </div>
                   </div>
                   <Button
