@@ -65,6 +65,16 @@ export const nodeService = {
   // Delete node
   async deleteNode(id: string): Promise<void> {
     await axiosInstance.delete(`nodes/${id}/`);
+  },
+
+  // Add parameters to a node
+  async addParametersToNode(id: string, parameterIds: string[]): Promise<void> {
+    await axiosInstance.post(`nodes/${id}/add_parameter/`, { parameter_ids: parameterIds });
+  },
+
+  // Remove parameters from a node
+  async removeParametersFromNode(id: string, parameterIds: string[]): Promise<void> {
+    await axiosInstance.delete(`nodes/${id}/remove-parameter/`, { data: { parameter_ids: parameterIds } });
   }
 };
 
