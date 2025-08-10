@@ -52,7 +52,7 @@ export function SubnodeDetailPage() {
   const [versionsOpen, setVersionsOpen] = useState(false);
   
   const { data: subnode, loading, error, refetch } = useSubnode(id || '');
-  const { data: versions, loading: versionsLoading, refetch: refetchVersions } = useSubnodeVersions(id || '');
+  const { data: versions, loading: versionsLoading, refetch: refetchVersions } = useSubnodeVersions(subnode);
 
   if (loading) {
     return (
@@ -116,12 +116,12 @@ export function SubnodeDetailPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <h1 className="text-3xl font-bold">🧩 {subnode.name}</h1>
-          <Badge variant="outline">v{subnode.version}</Badge>
+          <Badge variant="outline">v{subnode.active_version || 'No active version'}</Badge>
           <Badge 
-            variant={subnode.is_selected ? "default" : "outline"}
-            className={subnode.is_selected ? "bg-green-500 text-white" : "text-muted-foreground"}
+            variant={subnode.active_version ? "default" : "outline"}
+            className={subnode.active_version ? "bg-green-500 text-white" : "text-muted-foreground"}
           >
-            {subnode.is_selected ? "🟢 Selected" : "🔴 Not Selected"}
+            {subnode.active_version ? "🟢 Active" : "🔴 Inactive"}
           </Badge>
         </div>
         
@@ -181,7 +181,7 @@ export function SubnodeDetailPage() {
             <div>
               <h4 className="font-semibold">Current Version</h4>
               <div className="flex items-center space-x-2">
-                <Badge variant="outline">v{subnode.version}</Badge>
+                <Badge variant="outline">v{subnode.active_version || 'None'}</Badge>
                 <Collapsible open={versionsOpen} onOpenChange={setVersionsOpen}>
                   <CollapsibleTrigger asChild>
                     <Button variant="ghost" size="sm" className="h-6 px-2">
@@ -194,16 +194,16 @@ export function SubnodeDetailPage() {
               </div>
             </div>
             <div>
-              <h4 className="font-semibold">Last Updated By</h4>
-              <p className="text-muted-foreground">{subnode.last_updated_by || 'Unknown'}</p>
+              <h4 className="font-semibold">Created By</h4>
+              <p className="text-muted-foreground">{subnode.created_by || 'Unknown'}</p>
             </div>
             <div>
               <h4 className="font-semibold">Created Date</h4>
               <p className="text-muted-foreground">{formatDate(subnode.created_at)}</p>
             </div>
             <div>
-              <h4 className="font-semibold">Last Modified Date</h4>
-              <p className="text-muted-foreground">{formatDate(subnode.last_updated_at)}</p>
+              <h4 className="font-semibold">Description</h4>
+              <p className="text-muted-foreground">{subnode.description || 'No description'}</p>
             </div>
           </div>
         </CardContent>
@@ -238,21 +238,21 @@ export function SubnodeDetailPage() {
                   {versions.map((version) => (
                     <TableRow key={version.id}>
                       <TableCell>
-                        <Badge variant={version.is_active ? "default" : "outline"}>
+                        <Badge variant={version.is_deployed ? "default" : "outline"}>
                           v{version.version}
                         </Badge>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center space-x-2">
-                          {version.is_active ? (
+                          {version.is_deployed ? (
                             <>
                               <CheckCircle className="h-4 w-4 text-green-500" />
-                              <span className="text-green-700 font-medium">Active</span>
+                              <span className="text-green-700 font-medium">Deployed</span>
                             </>
                           ) : (
                             <>
                               <Clock className="h-4 w-4 text-muted-foreground" />
-                              <span className="text-muted-foreground">Inactive</span>
+                              <span className="text-muted-foreground">Draft</span>
                             </>
                           )}
                         </div>
@@ -260,19 +260,19 @@ export function SubnodeDetailPage() {
                       <TableCell>
                         <div className="flex items-center space-x-2">
                           <User className="h-4 w-4 text-muted-foreground" />
-                          <span>{version.created_by}</span>
+                          <span>{version.updated_by || 'Unknown'}</span>
                         </div>
                       </TableCell>
                       <TableCell>
-                        {new Date(version.created_at).toLocaleString()}
+                        {new Date(version.updated_at).toLocaleString()}
                       </TableCell>
                       <TableCell>
                         <span className="text-sm text-muted-foreground">
-                          {version.description || 'No description'}
+                          {version.version_comment || 'No comment'}
                         </span>
                       </TableCell>
                       <TableCell>
-                        {!version.is_active ? (
+                        {!version.is_deployed ? (
                           <Button 
                             variant="outline" 
                             size="sm"
