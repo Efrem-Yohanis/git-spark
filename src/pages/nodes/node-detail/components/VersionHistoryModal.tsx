@@ -13,8 +13,6 @@ interface VersionHistoryModalProps {
   loading: boolean;
   onActivateVersion: (version: number) => void;
   onViewVersion: (version: NodeVersion) => void;
-  onEditVersion: (version: NodeVersion) => void;
-  nodeId: string;
 }
 
 export function VersionHistoryModal({
@@ -23,9 +21,7 @@ export function VersionHistoryModal({
   versions,
   loading,
   onActivateVersion,
-  onViewVersion,
-  onEditVersion,
-  nodeId
+  onViewVersion
 }: VersionHistoryModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -122,39 +118,29 @@ export function VersionHistoryModal({
                           View
                         </Button>
                         {!version.is_deployed && (
-                          <>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => onEditVersion(version)}
-                            >
-                              <Edit className="h-3 w-3 mr-1" />
-                              Edit
-                            </Button>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="default" size="sm">
-                                  <Play className="h-3 w-3 mr-1" />
-                                  Activate
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Activate Version {version.version}</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    This will make version {version.version} the active (deployed) version. 
-                                    The current active version will be deactivated. This action cannot be undone.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => onActivateVersion(version.version)}>
-                                    Activate Version
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="default" size="sm">
+                                <Play className="h-3 w-3 mr-1" />
+                                Activate
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Activate Version {version.version}</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This will make version {version.version} the active (deployed) version. 
+                                  The current active version will be deactivated. This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => onActivateVersion(version.version)}>
+                                  Activate Version
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         )}
                         {version.is_deployed && (
                           <Badge variant="secondary" className="text-xs">

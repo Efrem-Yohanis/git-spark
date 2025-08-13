@@ -478,8 +478,6 @@ export function NodeDetailPage() {
         loading={nodeVersionsLoading}
         onActivateVersion={activateNodeVersion}
         onViewVersion={handleViewVersion}
-        onEditVersion={handleEditVersion}
-        nodeId={id!}
       />
 
       {/* Back to Nodes Button */}
