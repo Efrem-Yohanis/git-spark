@@ -43,8 +43,8 @@ export interface SubnodeVersion {
   is_editable: boolean;
   updated_at: string;
   updated_by: string;
-  version_comment: string;
-  parameter_values: { [key: string]: string };
+  version_comment: string | null;
+  parameter_values: ParameterValue[];
 }
 
 export interface CreateSubnodeRequest {
@@ -75,6 +75,24 @@ export interface CloneSubnodeRequest {
 
 export interface CreateEditableVersionRequest {
   version_comment: string;
+}
+
+export interface VersionDetail {
+  id: string;
+  name: string;
+  description: string;
+  node: string;
+  version: number;
+  version_comment: string;
+  is_deployed: boolean;
+  is_editable: boolean;
+  parameter_values: ParameterValue[];
+}
+
+export interface ParameterValue {
+  id: string;
+  parameter_key: string;
+  value: string;
 }
 
 // API Service Functions
@@ -122,7 +140,7 @@ export const subnodeService = {
   },
 
   // Create editable version from active
-  async createEditableVersion(id: string, data: CreateEditableVersionRequest): Promise<{ id: string; version: number; is_deployed: boolean; message: string }> {
+  async createEditableVersion(id: string, data: CreateEditableVersionRequest): Promise<SubnodeDetail> {
     const response = await axiosInstance.post(`subnodes/${id}/create_editable_version/`, data);
     return response.data;
   },
@@ -167,6 +185,28 @@ export const subnodeService = {
   async deleteAllVersions(id: string): Promise<{ message: string }> {
     const response = await axiosInstance.delete(`subnodes/${id}/delete_all_versions/`);
     return response.data;
+  },
+
+  // Get version detail by fetching subnode and finding the specific version
+  async getVersionDetail(id: string, version: number): Promise<VersionDetail> {
+    const subnode = await this.getSubnode(id);
+    const versionData = subnode.versions.find(v => v.version === version);
+    
+    if (!versionData) {
+      throw new Error(`Version ${version} not found for subnode ${id}`);
+    }
+    
+    return {
+      id: versionData.id,
+      name: subnode.name,
+      description: subnode.description,
+      node: subnode.node,
+      version: versionData.version,
+      version_comment: versionData.version_comment || '',
+      is_deployed: versionData.is_deployed,
+      is_editable: versionData.is_editable,
+      parameter_values: versionData.parameter_values
+    };
   },
 };
 

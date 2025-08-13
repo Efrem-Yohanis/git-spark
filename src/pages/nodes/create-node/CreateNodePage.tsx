@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -6,79 +7,41 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Plus, Trash2, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
-interface NodeParameter {
-  id: string;
-  key: string;
-  valueType: string;
-}
-
-const mockExistingParameters = [
-  { id: "1", key: "database_url", valueType: "String" },
-  { id: "2", key: "timeout", valueType: "Integer" },
-  { id: "3", key: "enable_cache", valueType: "Boolean" },
-  { id: "4", key: "max_connections", valueType: "Integer" },
-];
-
-const mockActiveSubnodes = [
-  { id: "1", name: "Data Validator" },
-  { id: "2", name: "Email Processor" },
-  { id: "3", name: "File Handler" },
-  { id: "4", name: "API Connector" },
-  { id: "5", name: "Cache Manager" },
-];
+import { nodeService } from "@/services/nodeService";
+import { useParameters } from "@/services/parameterService";
 
 export function CreateNodePage() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { data: availableParameters, loading: parametersLoading } = useParameters();
   
   const [nodeName, setNodeName] = useState("");
   const [nodeDescription, setNodeDescription] = useState("");
   const [scriptFile, setScriptFile] = useState<File | null>(null);
-  const [nodeParameters, setNodeParameters] = useState<NodeParameter[]>([]);
-  const [selectedSubnodes, setSelectedSubnodes] = useState<string[]>([]);
+  const [selectedParameterIds, setSelectedParameterIds] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [parameterComboOpen, setParameterComboOpen] = useState(false);
 
-  const addParameter = () => {
-    const newParam: NodeParameter = {
-      id: Date.now().toString(),
-      key: "",
-      valueType: "String"
-    };
-    setNodeParameters([...nodeParameters, newParam]);
-  };
+  const availableParametersForSelection = availableParameters.filter(param =>
+    !selectedParameterIds.includes(param.id)
+  );
 
-  const addExistingParameter = (existingParamId: string) => {
-    const existingParam = mockExistingParameters.find(p => p.id === existingParamId);
-    if (existingParam) {
-      const newParam: NodeParameter = {
-        id: Date.now().toString(),
-        key: existingParam.key,
-        valueType: existingParam.valueType
-      };
-      setNodeParameters([...nodeParameters, newParam]);
+  const selectedParameters = availableParameters.filter(param => 
+    selectedParameterIds.includes(param.id)
+  );
+
+  const addParameter = (parameterId: string) => {
+    if (!selectedParameterIds.includes(parameterId)) {
+      setSelectedParameterIds([...selectedParameterIds, parameterId]);
     }
   };
 
-  const removeParameter = (id: string) => {
-    setNodeParameters(nodeParameters.filter(p => p.id !== id));
-  };
-
-  const updateParameter = (id: string, field: keyof NodeParameter, value: string) => {
-    setNodeParameters(nodeParameters.map(p => 
-      p.id === id ? { ...p, [field]: value } : p
-    ));
-  };
-
-  const addSubnode = (subnodeId: string) => {
-    if (!selectedSubnodes.includes(subnodeId)) {
-      setSelectedSubnodes([...selectedSubnodes, subnodeId]);
-    }
-  };
-
-  const removeSubnode = (subnodeId: string) => {
-    setSelectedSubnodes(selectedSubnodes.filter(id => id !== subnodeId));
+  const removeParameter = (parameterId: string) => {
+    setSelectedParameterIds(selectedParameterIds.filter(id => id !== parameterId));
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -88,7 +51,7 @@ export function CreateNodePage() {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!nodeName.trim()) {
       toast({
         title: "Error",
@@ -107,24 +70,41 @@ export function CreateNodePage() {
       return;
     }
 
-    // Validate parameters
-    for (const param of nodeParameters) {
-      if (!param.key.trim()) {
-        toast({
-          title: "Error",
-          description: "All parameter keys must be filled",
-          variant: "destructive"
-        });
-        return;
-      }
-    }
+    setIsLoading(true);
+    try {
+      // Create the node first
+      const newNode = await nodeService.createNode({
+        name: nodeName,
+        description: nodeDescription,
+        script: scriptFile?.name || ''
+      });
 
-    toast({
-      title: "Success",
-      description: "Node created successfully"
-    });
-    
-    navigate("/nodes");
+      // Add parameters to version 1 if any are selected
+      if (selectedParameterIds.length > 0) {
+        await nodeService.addParametersToVersion(newNode.id, 1, selectedParameterIds);
+      }
+
+      toast({
+        title: "Success",
+        description: "Node created successfully"
+      });
+      
+      navigate("/nodes");
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.detail || 
+                          error.response?.data?.message || 
+                          error.response?.data?.error || 
+                          error.message || 
+                          "Failed to create node";
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive"
+      });
+      console.error("Create node error:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleCancel = () => {
@@ -191,76 +171,99 @@ export function CreateNodePage() {
       {/* Node Parameters */}
       <Card>
         <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Node Parameters</CardTitle>
-              <Select onValueChange={addExistingParameter}>
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Attach existing parameter" />
-                </SelectTrigger>
-                <SelectContent>
-                  {mockExistingParameters.map((param) => (
-                    <SelectItem key={param.id} value={param.id}>
-                      {param.key} ({param.valueType})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <CardTitle>Node Parameters</CardTitle>
         </CardHeader>
         <CardContent>
-          {nodeParameters.length === 0 ? (
-            <p className="text-muted-foreground text-center py-4">No parameters added yet</p>
-          ) : (
-            <div className="space-y-4">
-              {nodeParameters.map((param) => (
-                <div key={param.id} className="flex items-end gap-4 p-4 border rounded-lg">
-                  <div className="flex-1">
-                    <Label>Key *</Label>
-                    <Input
-                      value={param.key}
-                      onChange={(e) => updateParameter(param.id, 'key', e.target.value)}
-                      placeholder="Parameter key"
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <Label>Value Type *</Label>
-                    <Select
-                      value={param.valueType}
-                      onValueChange={(value) => updateParameter(param.id, 'valueType', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="String">String</SelectItem>
-                        <SelectItem value="Integer">Integer</SelectItem>
-                        <SelectItem value="Boolean">Boolean</SelectItem>
-                        <SelectItem value="Float">Float</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+          <div className="space-y-4">
+            {/* Parameter Selection */}
+            <div className="space-y-2">
+              <Label>Select Parameter</Label>
+              <Popover open={parameterComboOpen} onOpenChange={setParameterComboOpen}>
+                <PopoverTrigger asChild>
                   <Button
                     variant="outline"
-                    size="sm"
-                    onClick={() => removeParameter(param.id)}
+                    role="combobox"
+                    aria-expanded={parameterComboOpen}
+                    className="w-full justify-between"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    Select a parameter to add...
+                    <Plus className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
-                </div>
-              ))}
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0">
+                  <Command>
+                    <CommandInput placeholder="Type to search parameters..." />
+                    <CommandList>
+                      <CommandEmpty>No parameters found.</CommandEmpty>
+                      <CommandGroup>
+                        {parametersLoading ? (
+                          <CommandItem disabled>Loading parameters...</CommandItem>
+                        ) : availableParametersForSelection.length === 0 ? (
+                          <CommandItem disabled>No parameters available</CommandItem>
+                        ) : (
+                          availableParametersForSelection.map((param) => (
+                            <CommandItem
+                              key={param.id}
+                              value={param.key}
+                              onSelect={() => {
+                                addParameter(param.id);
+                                setParameterComboOpen(false);
+                              }}
+                            >
+                              <div className="flex flex-col">
+                                <span className="font-medium">{param.key}</span>
+                                <span className="text-sm text-muted-foreground">
+                                  Default: {param.default_value || 'None'} | {param.required ? 'Required' : 'Optional'}
+                                </span>
+                              </div>
+                            </CommandItem>
+                          ))
+                        )}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
-          )}
+
+            {/* Selected Parameters */}
+            {selectedParameters.length === 0 ? (
+              <p className="text-muted-foreground text-center py-4">No parameters selected</p>
+            ) : (
+              <div className="space-y-2">
+                <Label>Selected Parameters</Label>
+                <div className="space-y-2">
+                  {selectedParameters.map((param) => (
+                    <div key={param.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex-1">
+                        <div className="font-medium">{param.key}</div>
+                        <div className="text-sm text-muted-foreground">
+                          Default: {param.default_value || 'None'} | {param.required ? 'Required' : 'Optional'}
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => removeParameter(param.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 
-
       {/* Action Buttons */}
       <div className="flex items-center justify-end space-x-4">
-        <Button variant="outline" onClick={handleCancel}>
+        <Button variant="outline" onClick={handleCancel} disabled={isLoading}>
           Cancel
         </Button>
-        <Button onClick={handleSave}>
-          Save Node
+        <Button onClick={handleSave} disabled={isLoading}>
+          {isLoading ? "Creating..." : "Save Node"}
         </Button>
       </div>
     </div>
