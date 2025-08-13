@@ -106,7 +106,7 @@ export function NodeDetailPage() {
 
 
   // Event handlers
-  const handleEditVersion = () => {
+  const handleEditCurrentVersion = () => {
     if (selectedVersion && !selectedVersion.is_deployed) {
       navigate(`/nodes/${id}/edit?version=${selectedVersion.version}`);
     }
@@ -160,7 +160,7 @@ export function NodeDetailPage() {
     }
   };
 
-  const handleViewVersion = async (version: NodeVersion) => {
+  const handleEditVersion = async (version: NodeVersion) => {
     if (!id) return;
     
     try {
@@ -175,11 +175,30 @@ export function NodeDetailPage() {
       console.log('📡 Processed version details:', versionDetails);
       console.log('📡 Version is editable:', versionDetails.is_editable);
       
-      // Check if version is editable and redirect to edit page
-      if (versionDetails.is_editable) {
-        navigate(`/nodes/${id}/edit-version/${versionDetails.version}`);
-        return;
-      }
+      // Redirect to edit page with version data
+      navigate(`/nodes/${id}/edit-version/${versionDetails.version}`);
+      setVersionHistoryOpen(false);
+    } catch (err: any) {
+      console.error('Error fetching version details for editing:', err);
+      toast({
+        title: "Error",
+        description: "Failed to load version details for editing",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleViewVersion = async (version: NodeVersion) => {
+    if (!id) return;
+    
+    try {
+      // Fetch specific version details from API
+      const versionResponse = await nodeService.getNodeVersion(id, version.version);
+      console.log('📡 Raw API response:', versionResponse);
+      
+      // Extract the actual version data from the response array
+      const versionData = Array.isArray(versionResponse) ? versionResponse[0] : versionResponse;
+      const versionDetails = versionData.versions?.[0] || versionData;
       
       // Create the selected version object with the correct structure
       const selectedVersionData = {
@@ -410,7 +429,7 @@ export function NodeDetailPage() {
       <NodeHeader
         node={node}
         selectedVersion={selectedVersion}
-        onEditVersion={handleEditVersion}
+        onEditVersion={handleEditCurrentVersion}
         onToggleDeployment={handleToggleDeployment}
         onCreateNewVersion={handleCreateNewVersion}
         onShowVersionHistory={handleShowVersionHistory}
@@ -459,6 +478,8 @@ export function NodeDetailPage() {
         loading={nodeVersionsLoading}
         onActivateVersion={activateNodeVersion}
         onViewVersion={handleViewVersion}
+        onEditVersion={handleEditVersion}
+        nodeId={id!}
       />
 
       {/* Back to Nodes Button */}
