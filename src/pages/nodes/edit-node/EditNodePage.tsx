@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,16 +8,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, Upload, Download, ArrowLeft } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { nodeService, type Node, type NodeVersion } from "@/services/nodeService";
 
 interface NodeParameter {
   id: string;
   key: string;
-  datatype: string;
-  default_value?: string;
-  is_active?: boolean;
+  valueType: string;
 }
 
 interface SubNodeParameter {
@@ -63,90 +60,30 @@ export function EditNodePage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [searchParams] = useSearchParams();
-  const version = searchParams.get('version');
   
-  const [loading, setLoading] = useState(true);
-  const [node, setNode] = useState<Node | null>(null);
-  const [versionData, setVersionData] = useState<NodeVersion | null>(null);
   const [nodeName, setNodeName] = useState("");
-  const [description, setDescription] = useState("");
   const [scriptName, setScriptName] = useState("");
-  const [scriptFile, setScriptFile] = useState<File | null>(null);
+  const [executableScript, setExecutableScript] = useState("");
+  const [useScriptName, setUseScriptName] = useState(true);
   const [nodeParameters, setNodeParameters] = useState<NodeParameter[]>([]);
   const [subNodes, setSubNodes] = useState<SubNode[]>([]);
 
   useEffect(() => {
-    const loadNodeAndVersion = async () => {
-      if (!id) return;
-      
-      try {
-        setLoading(true);
-        
-        // Load node data
-        const nodeData = await nodeService.getNode(id);
-        setNode(nodeData);
-        setNodeName(nodeData.name);
-        setDescription(nodeData.description || "");
-        
-        if (version) {
-          // Load specific version data
-          const versionResponse = await nodeService.getNodeVersion(id, parseInt(version));
-          const versionDetails = Array.isArray(versionResponse) ? versionResponse[0] : versionResponse;
-          const actualVersion = versionDetails.versions?.[0] || versionDetails;
-          
-          setVersionData(actualVersion);
-          setScriptName(actualVersion.script || "");
-           setNodeParameters(actualVersion.parameters || []);
-           // Map subnodes to match our interface
-           const mappedSubnodes = (actualVersion.subnodes || []).map((subnode: any) => ({
-             id: subnode.id,
-             name: subnode.name,
-             scriptName: subnode.script || "",
-             isDeployed: subnode.is_deployed || false,
-             parameters: subnode.parameter_values || []
-           }));
-           setSubNodes(mappedSubnodes);
-         } else {
-           // Use current node data
-           const activeVersion = nodeData.versions.find(v => v.is_deployed) || nodeData.versions[0];
-           if (activeVersion) {
-             setVersionData(activeVersion);
-             setScriptName(activeVersion.script || nodeData.script || "");
-             setNodeParameters(activeVersion.parameters || []);
-             // Map subnodes to match our interface
-             const mappedSubnodes = (activeVersion.subnodes || []).map((subnode: any) => ({
-               id: subnode.id,
-               name: subnode.name,
-               scriptName: subnode.script || "",
-               isDeployed: subnode.is_deployed || false,
-               parameters: subnode.parameter_values || []
-             }));
-             setSubNodes(mappedSubnodes);
-           }
-        }
-      } catch (error) {
-        console.error("Error loading node/version data:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load node data",
-          variant: "destructive"
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadNodeAndVersion();
-  }, [id, version, toast]);
+    // Load existing node data
+    const node = mockNode; // In real app, fetch from API
+    setNodeName(node.name);
+    setScriptName(node.scriptName);
+    setExecutableScript(node.executableScript);
+    setUseScriptName(node.useScriptName);
+    setNodeParameters(node.parameters);
+    setSubNodes(node.subNodes);
+  }, [id]);
 
   const addParameter = () => {
     const newParam: NodeParameter = {
       id: Date.now().toString(),
       key: "",
-      datatype: "String",
-      default_value: "",
-      is_active: true
+      valueType: "String"
     };
     setNodeParameters([...nodeParameters, newParam]);
   };
@@ -160,7 +97,7 @@ export function EditNodePage() {
     })));
   };
 
-  const updateParameter = (paramId: string, field: keyof NodeParameter, value: string | boolean) => {
+  const updateParameter = (paramId: string, field: keyof NodeParameter, value: string) => {
     setNodeParameters(nodeParameters.map(p => 
       p.id === paramId ? { ...p, [field]: value } : p
     ));
@@ -221,11 +158,29 @@ export function EditNodePage() {
     ));
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!nodeName.trim()) {
       toast({
         title: "Error",
         description: "Node name is required",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!useScriptName && !executableScript.trim()) {
+      toast({
+        title: "Error", 
+        description: "Either script name or executable script is required",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (useScriptName && !scriptName.trim()) {
+      toast({
+        title: "Error",
+        description: "Script name is required when using script reference",
         variant: "destructive"
       });
       return;
@@ -243,118 +198,34 @@ export function EditNodePage() {
       }
     }
 
-    try {
-      if (version && versionData) {
-        // Update existing version
-        await nodeService.updateNode(id!, {
-          name: nodeName,
-          description: description,
-          script: scriptName
-        });
-        
+    // Validate subnodes
+    for (const subnode of subNodes) {
+      if (!subnode.name.trim()) {
         toast({
-          title: "Success",
-          description: `Version ${version} updated successfully`
+          title: "Error",
+          description: "All subnode names must be filled",
+          variant: "destructive"
         });
-      } else {
-        // Update node
-        await nodeService.updateNode(id!, {
-          name: nodeName,
-          description: description,
-          script: scriptName
-        });
-        
-        toast({
-          title: "Success", 
-          description: "Node updated successfully"
-        });
+        return;
       }
-      
-      navigate(`/nodes/${id}`);
-    } catch (error) {
-      console.error("Error saving:", error);
-      toast({
-        title: "Error",
-        description: "Failed to save changes",
-        variant: "destructive"
-      });
     }
+
+    toast({
+      title: "Success",
+      description: "Node updated successfully"
+    });
+    
+    navigate("/nodes");
   };
 
   const handleCancel = () => {
-    navigate(`/nodes/${id}`);
+    navigate("/nodes");
   };
-
-  const handleScriptUpload = async () => {
-    if (!scriptFile || !id || !versionData) {
-      toast({
-        title: "Error",
-        description: "Please select a file to upload",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    try {
-      await nodeService.updateScript(id, versionData.version, scriptFile);
-      toast({
-        title: "Success",
-        description: "Script updated successfully"
-      });
-      setScriptFile(null);
-      // Clear the file input
-      const fileInput = document.getElementById('scriptUpload') as HTMLInputElement;
-      if (fileInput) fileInput.value = '';
-    } catch (error) {
-      console.error('Error updating script:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update script",
-        variant: "destructive"
-      });
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p>Loading node data...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!node) {
-    return (
-      <div className="text-center py-8">
-        <p>Node not found</p>
-        <Button onClick={() => navigate('/nodes')} className="mt-4">
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Nodes
-        </Button>
-      </div>
-    );
-  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <Button variant="outline" onClick={handleCancel}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Node
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold">
-              {version ? `Edit Version ${version}` : 'Edit Node'}
-            </h1>
-            <p className="text-muted-foreground">
-              {version && versionData ? versionData.version_comment || 'No description' : node.description}
-            </p>
-          </div>
-        </div>
+        <h1 className="text-3xl font-bold">Edit Node</h1>
       </div>
 
       {/* Node Information */}
@@ -373,17 +244,6 @@ export function EditNodePage() {
             />
           </div>
 
-          <div>
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Enter node description"
-              rows={3}
-            />
-          </div>
-
           <div className="space-y-4">
             <div>
               <Label htmlFor="scriptName">Script Name</Label>
@@ -395,31 +255,22 @@ export function EditNodePage() {
               />
             </div>
             
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
               <Button 
                 variant="outline" 
                 size="sm"
                 onClick={() => {
-                  if (scriptName) {
-                    // Download existing script
-                    const scriptContent = "# Current script content\nprint('Hello, World!')";
-                    const blob = new Blob([scriptContent], { type: 'text/plain' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = scriptName || 'script.py';
-                    a.click();
-                    URL.revokeObjectURL(url);
-                  } else {
-                    toast({
-                      title: "No Script",
-                      description: "No script file available to download",
-                      variant: "destructive"
-                    });
-                  }
+                  // Download existing script
+                  const scriptContent = "# Sample script content\nprint('Hello, World!')";
+                  const blob = new Blob([scriptContent], { type: 'text/plain' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = scriptName || 'script.py';
+                  a.click();
+                  URL.revokeObjectURL(url);
                 }}
               >
-                <Download className="h-4 w-4 mr-2" />
                 Download Current Script
               </Button>
               
@@ -429,7 +280,13 @@ export function EditNodePage() {
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) {
-                    setScriptFile(file);
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                      // Handle file upload
+                      console.log('File uploaded:', file.name);
+                      setScriptName(file.name);
+                    };
+                    reader.readAsText(file);
                   }
                 }}
                 style={{ display: 'none' }}
@@ -440,20 +297,8 @@ export function EditNodePage() {
                 size="sm"
                 onClick={() => document.getElementById('scriptUpload')?.click()}
               >
-                <Upload className="h-4 w-4 mr-2" />
-                Select New Script
+                Upload New Script
               </Button>
-              
-              {scriptFile && (
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm text-muted-foreground">
-                    Selected: {scriptFile.name}
-                  </span>
-                  <Button size="sm" onClick={handleScriptUpload}>
-                    Upload Script
-                  </Button>
-                </div>
-              )}
             </div>
           </div>
         </CardContent>
@@ -488,8 +333,8 @@ export function EditNodePage() {
                   <div className="flex-1">
                     <Label>Value Type *</Label>
                     <Select
-                      value={param.datatype}
-                      onValueChange={(value) => updateParameter(param.id, 'datatype', value)}
+                      value={param.valueType}
+                      onValueChange={(value) => updateParameter(param.id, 'valueType', value)}
                     >
                       <SelectTrigger>
                         <SelectValue />

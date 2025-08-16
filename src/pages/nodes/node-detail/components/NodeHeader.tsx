@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Play, Square, History, Plus, TestTube, Copy, Download, Trash2 } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Edit, Play, Square, History, Plus, TestTube, Trash2, Copy, Download, MoreVertical } from "lucide-react";
 import { Node, NodeVersion } from "@/services/nodeService";
 import { useNavigate } from "react-router-dom";
 
@@ -11,9 +12,9 @@ interface NodeHeaderProps {
   onToggleDeployment: () => void;
   onCreateNewVersion: () => void;
   onShowVersionHistory: () => void;
-  onCloneNode: () => void;
-  onExportVersion: () => void;
   onDeleteVersion: () => void;
+  onCloneVersion: () => void;
+  onExportVersion: () => void;
   isLoading?: boolean;
 }
 
@@ -24,9 +25,9 @@ export function NodeHeader({
   onToggleDeployment,
   onCreateNewVersion,
   onShowVersionHistory,
-  onCloneNode,
-  onExportVersion,
   onDeleteVersion,
+  onCloneVersion,
+  onExportVersion,
   isLoading = false
 }: NodeHeaderProps) {
   const navigate = useNavigate();
@@ -60,97 +61,41 @@ export function NodeHeader({
         </div>
         
         <div className="flex items-center space-x-2">
-          {/* Show for active/deployed version */}
-          {isDeployed && (
-            <>
-              <Button 
-                variant="destructive"
-                onClick={onToggleDeployment}
-                disabled={isLoading}
-                size="icon"
-                title="Undeploy Version"
-              >
-                <Square className="h-4 w-4" />
-              </Button>
-              
-              <Button 
-                variant="outline"
-                onClick={onCreateNewVersion}
-                disabled={isLoading}
-                size="icon"
-                title="Create New Version"
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-            </>
+          {/* Dynamic Edit/Create New Version Button */}
+          {isEditable ? (
+            <Button 
+              variant="outline"
+              onClick={onEditVersion}
+              disabled={isLoading}
+              size="icon"
+              title="Edit Version"
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+          ) : (
+            <Button 
+              variant="outline"
+              onClick={onCreateNewVersion}
+              disabled={isLoading}
+              size="icon"
+              title="Create New Version"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
           )}
           
-          {/* Show for draft/undeployed version */}
-          {isEditable && (
-            <>
-              <Button 
-                variant="outline"
-                onClick={onEditVersion}
-                disabled={isLoading}
-                size="icon"
-                title="Edit Version"
-              >
-                <Edit className="h-4 w-4" />
-              </Button>
-              
-              <Button 
-                variant="default"
-                onClick={onToggleDeployment}
-                disabled={isLoading}
-                size="icon"
-                title="Deploy Version"
-              >
-                <Play className="h-4 w-4" />
-              </Button>
-            </>
-          )}
-          
-          {/* Show for all versions */}
+          {/* Dynamic Deploy/Undeploy Button */}
           <Button 
-            variant="outline"
-            onClick={onCloneNode}
+            variant={isDeployed ? "destructive" : "default"}
+            onClick={onToggleDeployment}
             disabled={isLoading}
             size="icon"
-            title="Clone Node"
+            title={isDeployed ? "Undeploy Version" : "Deploy Version"}
           >
-            <Copy className="h-4 w-4" />
+            {isDeployed ? <Square className="h-4 w-4" /> : <Play className="h-4 w-4" />}
           </Button>
           
-          <Button 
-            variant="outline"
-            onClick={onExportVersion}
-            disabled={isLoading}
-            size="icon"
-            title="Export Version"
-          >
-            <Download className="h-4 w-4" />
-          </Button>
-          
-          <Button 
-            variant="outline"
-            onClick={onDeleteVersion}
-            disabled={isLoading}
-            size="icon"
-            title="Delete Version"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-          
-          <Button 
-            variant="outline"
-            onClick={handleTestNode}
-            disabled={isLoading}
-            size="icon"
-            title="Test Node"
-          >
-            <TestTube className="h-4 w-4" />
-          </Button>
-          
+          {/* Version History Button */}
           <Button 
             variant="outline" 
             onClick={onShowVersionHistory}
@@ -160,6 +105,42 @@ export function NodeHeader({
           >
             <History className="h-4 w-4" />
           </Button>
+
+          {/* Three Dots Menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="outline" 
+                size="icon"
+                disabled={isLoading}
+                title="More Actions"
+              >
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleTestNode} disabled={isLoading}>
+                <TestTube className="h-4 w-4 mr-2" />
+                Test Node
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onExportVersion} disabled={isLoading}>
+                <Download className="h-4 w-4 mr-2" />
+                Export Version
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onCloneVersion} disabled={isLoading}>
+                <Copy className="h-4 w-4 mr-2" />
+                Clone Version
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={onDeleteVersion} 
+                disabled={isLoading || isDeployed}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete Version
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </div>

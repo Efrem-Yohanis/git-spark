@@ -80,6 +80,14 @@ export interface Node {
   updated_at: string;
   last_updated_by: string | null;
   last_updated_at: string;
+  published_version?: {
+    id: string;
+    version: number;
+    state: string;
+    script_url: string;
+    parameters: any[];
+    subnodes: any[];
+  };
 }
 
 // API Service Functions
@@ -88,7 +96,7 @@ export const nodeService = {
   async getAllNodes(): Promise<Node[]> {
     console.log('📡 Fetching all nodes...');
     try {
-      const response = await axiosInstance.get('nodes/');
+      const response = await axiosInstance.get('node-families/');
       console.log('✅ Nodes fetched successfully:', response.data);
       return response.data;
     } catch (error) {
@@ -101,7 +109,7 @@ export const nodeService = {
   async getNode(id: string): Promise<Node> {
     console.log(`📡 Fetching node ${id}...`);
     try {
-      const response = await axiosInstance.get(`nodes/${id}/`);
+      const response = await axiosInstance.get(`node-families/${id}/`);
       console.log('✅ Node fetched successfully:', response.data);
       return response.data;
     } catch (error) {
@@ -112,56 +120,57 @@ export const nodeService = {
 
   // Update node
   async updateNode(id: string, data: Partial<Node>): Promise<Node> {
-    const response = await axiosInstance.put(`nodes/${id}/`, data);
+    const response = await axiosInstance.put(`node-families/${id}/`, data);
     return response.data;
   },
 
   // Delete node
   async deleteNode(id: string): Promise<void> {
-    await axiosInstance.delete(`nodes/${id}/`);
+    await axiosInstance.delete(`node-families/${id}/`);
   },
 
-  // Deploy node
-  async deployNode(id: string): Promise<{ status: string }> {
-    const response = await axiosInstance.post(`nodes/${id}/deploy/`);
+  // Deploy/Activate a version
+  async deployNodeVersion(id: string, version: number): Promise<{ status: string }> {
+    const response = await axiosInstance.post(`node-families/${id}/versions/${version}/deploy/`);
     return response.data;
   },
 
-  // Undeploy node
-  async undeployNode(id: string): Promise<{ status: string }> {
-    const response = await axiosInstance.post(`nodes/${id}/undeploy/`);
+  // Undeploy a version
+  async undeployNodeVersion(id: string, version: number): Promise<{ status: string }> {
+    const response = await axiosInstance.post(`node-families/${id}/versions/${version}/undeploy/`);
     return response.data;
   },
 
   // Get node versions
   async getNodeVersions(id: string): Promise<NodeVersion[]> {
-    const response = await axiosInstance.get(`nodes/${id}/versions/`);
+    const response = await axiosInstance.get(`node-families/${id}/versions/`);
     return response.data;
   },
 
-  // Activate node version (will deactivate other active nodes)
-  async activateNodeVersion(id: string, version: number): Promise<Node> {
-    const response = await axiosInstance.post(`nodes/${id}/deployed/${version}/`);
-    return response.data;
-  },
-
-  // Get specific node version details
+  // Get specific node version
   async getNodeVersion(id: string, version: number): Promise<NodeVersion> {
-    console.log(`📡 Fetching node ${id} version ${version}...`);
-    try {
-      const response = await axiosInstance.get(`nodes/${id}/versions/${version}/`);
-      console.log('✅ Node version fetched successfully:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error(`❌ Error fetching node ${id} version ${version}:`, error);
-      throw error;
-    }
+    const response = await axiosInstance.get(`node-families/${id}/versions/${version}/`);
+    return response.data;
+  },
+
+  // Create a new version
+  async createNodeVersion(id: string, fromVersion: number): Promise<NodeVersion> {
+    const response = await axiosInstance.post(`node-families/${id}/versions/`, { from_version: fromVersion });
+    return response.data;
+  },
+
+  // Activate node version (will deactivate other active nodes) - keeping for compatibility
+  async activateNodeVersion(id: string, version: number): Promise<Node> {
+    const response = await this.deployNodeVersion(id, version);
+    // Return updated node data
+    return await this.getNode(id);
   },
 
   // Get currently active node across the system
   async getActiveNode(): Promise<Node | null> {
     try {
       const nodes = await this.getAllNodes();
+      if (!Array.isArray(nodes)) return null;
       return nodes.find(node => node.active_version !== null) || null;
     } catch (error) {
       console.error('Error fetching active node:', error);
@@ -171,110 +180,13 @@ export const nodeService = {
 
   // Create node
   async createNode(data: Partial<Node>): Promise<Node> {
-    const response = await axiosInstance.post('nodes/', data);
+    const response = await axiosInstance.post('node-families/', data);
     return response.data;
   },
 
-  // Import nodes from JSON file
-  async importNodes(file: File): Promise<any> {
-    const formData = new FormData();
-    formData.append('file', file);
-    const response = await axiosInstance.post('nodes/import/', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response.data;
-  },
-
-  // Export all versions of a node
-  async exportAllVersions(id: string): Promise<Blob> {
-    const response = await axiosInstance.get(`nodes/${id}/export_all_versions/`, {
-      responseType: 'blob',
-    });
-    return response.data;
-  },
-
-  // Clone node
-  async cloneNode(id: string): Promise<Node> {
-    const response = await axiosInstance.post(`nodes/${id}/clone_node/`);
-    return response.data;
-  },
-
-  // Delete specific node version
-  async deleteNodeVersion(id: string, version: number): Promise<void> {
-    await axiosInstance.delete(`nodes/${id}/delete_version/${version}/`);
-  },
-
-  // Deploy node version
-  async deployNodeVersion(id: string, version: number): Promise<any> {
-    const response = await axiosInstance.post(`nodes/${id}/deployed/${version}/`);
-    return response.data;
-  },
-
-  // Undeploy node version
-  async undeployNodeVersion(id: string, version: number): Promise<any> {
-    const response = await axiosInstance.post(`nodes/${id}/undeploy_version/${version}/`);
-    return response.data;
-  },
-
-  // Create new version from existing version
-  async createNewVersion(id: string, currentVersion: number): Promise<NodeVersion> {
-    const response = await axiosInstance.post(`nodes/${id}/${currentVersion}/create_version/`);
-    return response.data;
-  },
-
-  // Export specific version
-  async exportVersion(id: string, version: number): Promise<Blob> {
-    const response = await axiosInstance.get(`nodes/${id}/versions/${version}/`, {
-      responseType: 'blob',
-    });
-    return response.data;
-  },
-
-  // Add parameters to version
-  async addParametersToVersion(id: string, version: number, parameterIds: string[]): Promise<any> {
-    const response = await axiosInstance.patch(`nodes/${id}/version/${version}/add_parameter/`, {
-      parameter_ids: parameterIds,
-    });
-    return response.data;
-  },
-
-  // Remove parameters from version
-  async removeParametersFromVersion(id: string, version: number, parameterIds: string[]): Promise<any> {
-    const response = await axiosInstance.patch(`nodes/${id}/version/${version}/remove_parameter/`, {
-      parameter_ids: parameterIds,
-    });
-    return response.data;
-  },
-
-  // Update script file for version
-  async updateScript(id: string, version: number, file: File): Promise<any> {
-    const formData = new FormData();
-    formData.append('script', file);
-    const response = await axiosInstance.patch(`nodes/${id}/update_script/${version}/`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response.data;
-  },
-
-  // Start execution of node script
-  async startExecution(id: string, version: number): Promise<any> {
-    const response = await axiosInstance.post(`node/${id}/start_execution/${version}/`);
-    return response.data;
-  },
-
-  // Stop execution of node script
-  async stopExecution(id: string, version: number): Promise<any> {
-    const response = await axiosInstance.post(`node/${id}/stop_execution/${version}/`);
-    return response.data;
-  },
-
-  // Add parameters to node (legacy - kept for compatibility)
+  // Add parameters to node
   async addParametersToNode(id: string, parameters: any[]): Promise<any> {
-    const response = await axiosInstance.post(`nodes/${id}/parameters_add/`, { parameters });
+    const response = await axiosInstance.post(`node-families/${id}/versions/${1}/add_parameter/`, { parameters });
     return response.data;
   }
 };
