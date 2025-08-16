@@ -121,11 +121,36 @@ export function NodeDetailPage() {
     setScriptError(null);
     
     try {
-      const response = await axios.get(scriptUrl);
+      // Add CORS headers and better error handling
+      const response = await axios.get(scriptUrl, {
+        headers: {
+          'Accept': 'text/plain, text/x-python, */*'
+        },
+        // Add timeout to prevent hanging
+        timeout: 10000
+      });
       setScriptContent(response.data);
     } catch (err: any) {
       console.error('Error fetching script content:', err);
-      setScriptError('Failed to load script content');
+      console.error('Error details:', {
+        message: err.message,
+        status: err.response?.status,
+        statusText: err.response?.statusText,
+        url: scriptUrl
+      });
+      
+      let errorMessage = 'Failed to load script content';
+      if (err.code === 'ECONNABORTED') {
+        errorMessage = 'Request timed out - server may be unavailable';
+      } else if (err.response?.status === 404) {
+        errorMessage = 'Script file not found';
+      } else if (err.response?.status === 403) {
+        errorMessage = 'Access denied to script file';
+      } else if (err.message.includes('CORS')) {
+        errorMessage = 'CORS error - unable to fetch script from external server';
+      }
+      
+      setScriptError(errorMessage);
       setScriptContent('');
     } finally {
       setScriptLoading(false);
