@@ -53,14 +53,46 @@ export interface Subnode {
   last_updated_at: string;
 }
 
-export interface NodeVersion {
+export interface NodeVersionDetail {
   id: string;
   version: number;
-  is_deployed: boolean;
-  is_editable: boolean;
-  script: string;
-  updated_at: string;
-  version_comment: string | null;
+  state: string;
+  changelog: string;
+  family: string;
+  family_name: string;
+  script_url: string;
+  parameters: Array<{
+    id: string;
+    parameter_id: string;
+    key: string;
+    value: string;
+    datatype: string;
+  }>;
+  subnodes: Array<{
+    link_id: string;
+    order: number;
+    family: {
+      id: string;
+      name: string;
+      is_deployed: boolean;
+    };
+    version: {
+      id: string;
+      version: number;
+      state: string;
+      parameters: Array<{
+        key: string;
+        value: string;
+        datatype: string;
+      }>;
+    };
+  }>;
+  created_at: string;
+  created_by: string;
+}
+
+export interface NodeVersion {
+  version: number;
   parameters: NodeParameter[];
   subnodes: Subnode[];
 }
@@ -69,25 +101,48 @@ export interface Node {
   id: string;
   name: string;
   description: string;
-  script: string;
-  version: number;
-  version_comment: string | null;
-  versions: NodeVersion[];
-  total_versions: number;
-  active_version: number | null;
-  original_version: number;
   created_at: string;
   updated_at: string;
-  last_updated_by: string | null;
-  last_updated_at: string;
+  created_by: string;
+  is_deployed: boolean;
   published_version?: {
     id: string;
     version: number;
     state: string;
+    changelog: string;
+    family: string;
+    family_name: string;
     script_url: string;
-    parameters: any[];
-    subnodes: any[];
+    parameters: Array<{
+      id: string;
+      parameter_id: string;
+      key: string;
+      value: string;
+      datatype: string;
+    }>;
+    subnodes: Array<{
+      link_id: string;
+      order: number;
+      family: {
+        id: string;
+        name: string;
+        is_deployed: boolean;
+      };
+      version: {
+        id: string;
+        version: number;
+        state: string;
+        parameters: Array<{
+          key: string;
+          value: string;
+          datatype: string;
+        }>;
+      };
+    }>;
+    created_at: string;
+    created_by: string;
   };
+  versions: NodeVersion[];
 }
 
 // API Service Functions
@@ -137,18 +192,18 @@ export const nodeService = {
 
   // Undeploy a version
   async undeployNodeVersion(id: string, version: number): Promise<{ status: string }> {
-    const response = await axiosInstance.post(`node-families/${id}/versions/${version}/undeploy/`);
+    const response = await axiosInstance.patch(`node-families/${id}/versions/${version}/undepoly/`);
     return response.data;
   },
 
-  // Get node versions
-  async getNodeVersions(id: string): Promise<NodeVersion[]> {
+  // Get node versions list
+  async getNodeVersions(id: string): Promise<NodeVersionDetail[]> {
     const response = await axiosInstance.get(`node-families/${id}/versions/`);
     return response.data;
   },
 
-  // Get specific node version
-  async getNodeVersion(id: string, version: number): Promise<NodeVersion> {
+  // Get specific node version detail
+  async getNodeVersionDetail(id: string, version: number): Promise<NodeVersionDetail> {
     const response = await axiosInstance.get(`node-families/${id}/versions/${version}/`);
     return response.data;
   },
