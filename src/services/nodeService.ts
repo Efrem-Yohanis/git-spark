@@ -315,5 +315,15 @@ export const nodeService = {
       },
     });
     return response.data;
+  },
+
+  // Get script content for a specific version
+  async getVersionScript(nodeId: string, version: number): Promise<string> {
+    const response = await axiosInstance.get(`node-families/${nodeId}/versions/${version}/script/`, {
+      headers: {
+        'Accept': 'text/plain, text/x-python, */*'
+      }
+    });
+    return response.data;
   }
 };

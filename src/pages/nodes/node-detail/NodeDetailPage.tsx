@@ -113,47 +113,25 @@ export function NodeDetailPage() {
   };
 
   // Fetch script content from version
-  const fetchScriptContent = async (versionId?: string, familyId?: string, versionNumber?: number) => {
-    if (!versionId && (!familyId || !versionNumber)) return;
+  const fetchScriptContent = async (familyId: string, versionNumber: number) => {
+    if (!familyId || !versionNumber) return;
     
     setScriptLoading(true);
     setScriptError(null);
     
     try {
-      let scriptUrl = '';
-      
-      if (selectedVersion?.script_url) {
-        // Use the script_url from the version data directly via API proxy
-        scriptUrl = selectedVersion.script_url.replace('http://127.0.0.1:8000', '/api');
-      } else if (familyId && versionNumber) {
-        // Fallback to version API endpoint  
-        scriptUrl = `/api/node-families/${familyId}/versions/${versionNumber}/script/`;
-      }
-      
-      if (!scriptUrl) {
-        throw new Error('No script URL available');
-      }
-
-      const response = await axios.get(scriptUrl, {
-        headers: {
-          'Accept': 'text/plain, text/x-python, */*'
-        },
-        timeout: 10000
-      });
-      
-      setScriptContent(response.data);
+      const scriptContent = await nodeService.getVersionScript(familyId, versionNumber);
+      setScriptContent(scriptContent);
     } catch (err: any) {
       console.error('Error fetching script content:', err);
       
       let errorMessage = 'Failed to load script content';
-      if (err.code === 'ECONNABORTED') {
-        errorMessage = 'Request timed out - server may be unavailable';
-      } else if (err.response?.status === 404) {
+      if (err.response?.status === 404) {
         errorMessage = 'Script file not found';
       } else if (err.response?.status === 403) {
         errorMessage = 'Access denied to script file';
-      } else if (err.message.includes('CORS')) {
-        errorMessage = 'CORS error - unable to fetch script from external server';
+      } else if (err.response?.status === 500) {
+        errorMessage = 'Server error while fetching script';
       }
       
       setScriptError(errorMessage);
@@ -166,9 +144,9 @@ export function NodeDetailPage() {
   // Effect to fetch script content when selected version changes
   useEffect(() => {
     if (selectedVersion) {
-      fetchScriptContent(selectedVersion.id, selectedVersion.family, selectedVersion.version);
+      fetchScriptContent(selectedVersion.family, selectedVersion.version);
     } else if (node?.published_version) {
-      fetchScriptContent(node.published_version.id, node.published_version.family, node.published_version.version);
+      fetchScriptContent(node.published_version.family, node.published_version.version);
     }
   }, [selectedVersion, node?.published_version]);
 
