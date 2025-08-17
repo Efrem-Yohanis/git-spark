@@ -326,7 +326,7 @@ export function NodeDetailPage() {
 
     try {
       // Create new version from current version
-      const newVersion = await nodeService.createNodeVersion(id, selectedVersion.version);
+      const newVersion = await nodeService.createNewNodeVersion(id, selectedVersion.version);
       
       toast({
         title: "Version Cloned",
