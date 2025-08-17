@@ -112,31 +112,38 @@ export function NodeDetailPage() {
     }
   };
 
-  // Fetch script content from URL
-  const fetchScriptContent = async (scriptUrl: string) => {
-    if (!scriptUrl) return;
+  // Fetch script content from version
+  const fetchScriptContent = async (versionId?: string, familyId?: string, versionNumber?: number) => {
+    if (!versionId && (!familyId || !versionNumber)) return;
     
     setScriptLoading(true);
     setScriptError(null);
     
     try {
-      // Add CORS headers and better error handling
+      let scriptUrl = '';
+      
+      if (selectedVersion?.script_url) {
+        // Use the script_url from the version data directly via API proxy
+        scriptUrl = selectedVersion.script_url.replace('http://127.0.0.1:8000', '/api');
+      } else if (familyId && versionNumber) {
+        // Fallback to version API endpoint  
+        scriptUrl = `/api/node-families/${familyId}/versions/${versionNumber}/script/`;
+      }
+      
+      if (!scriptUrl) {
+        throw new Error('No script URL available');
+      }
+
       const response = await axios.get(scriptUrl, {
         headers: {
           'Accept': 'text/plain, text/x-python, */*'
         },
-        // Add timeout to prevent hanging
         timeout: 10000
       });
+      
       setScriptContent(response.data);
     } catch (err: any) {
       console.error('Error fetching script content:', err);
-      console.error('Error details:', {
-        message: err.message,
-        status: err.response?.status,
-        statusText: err.response?.statusText,
-        url: scriptUrl
-      });
       
       let errorMessage = 'Failed to load script content';
       if (err.code === 'ECONNABORTED') {
@@ -158,12 +165,12 @@ export function NodeDetailPage() {
 
   // Effect to fetch script content when selected version changes
   useEffect(() => {
-    if (selectedVersion?.script_url) {
-      fetchScriptContent(selectedVersion.script_url);
-    } else if (node?.published_version?.script_url) {
-      fetchScriptContent(node.published_version.script_url);
+    if (selectedVersion) {
+      fetchScriptContent(selectedVersion.id, selectedVersion.family, selectedVersion.version);
+    } else if (node?.published_version) {
+      fetchScriptContent(node.published_version.id, node.published_version.family, node.published_version.version);
     }
-  }, [selectedVersion?.script_url, node?.published_version?.script_url]);
+  }, [selectedVersion, node?.published_version]);
 
   // Event handlers
   const handleEditVersion = () => {
