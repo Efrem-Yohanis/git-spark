@@ -136,87 +136,42 @@ export function SubnodesPage() {
             </SelectContent>
           </Select>
           <Input
-            placeholder="🔍 Search subnodes..."
+            placeholder="Search subnodes..."
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
               setCurrentPage(1);
             }}
-            className="w-96"
+            className="max-w-sm"
           />
         </div>
         
         <div className="flex items-center space-x-2">
           <div className="flex border border-border rounded-md">
             <Button
-              onClick={() => setViewMode('list')}
-              variant={viewMode === 'list' ? 'default' : 'ghost'}
-              size="sm"
-              className="rounded-r-none"
-            >
-              <List className="h-4 w-4" />
-            </Button>
-            <Button
               onClick={() => setViewMode('grid')}
               variant={viewMode === 'grid' ? 'default' : 'ghost'}
               size="sm"
-              className="rounded-l-none"
+              className="rounded-r-none"
             >
               <Grid2X2 className="h-4 w-4" />
             </Button>
+            <Button
+              onClick={() => setViewMode('list')}
+              variant={viewMode === 'list' ? 'default' : 'ghost'}
+              size="sm"
+              className="rounded-l-none"
+            >
+              <List className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="text-sm text-muted-foreground">
+            Read-only view - Use DevTool for management operations
           </div>
         </div>
       </div>
 
-      {viewMode === 'list' ? (
-        <div className="border rounded-lg">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>SubNode Name</TableHead>
-                <TableHead>Node Family</TableHead>
-                <TableHead>Version</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Last Updated By</TableHead>
-                <TableHead>Last Updated At</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedSubnodes.map((subnode) => (
-                <TableRow key={subnode.id}>
-                  <TableCell className="font-medium">{subnode.name}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{subnode.node_family_name || subnode.node_family}</Badge>
-                  </TableCell>
-                  <TableCell className="text-sm">{subnode.active_version || 'None'}</TableCell>
-                  <TableCell>
-                    <Badge 
-                      variant={getDeploymentBadge(subnode.active_version).variant}
-                      className={getDeploymentBadge(subnode.active_version).className}
-                    >
-                      {subnode.active_version ? "Active" : "Inactive"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{subnode.updated_by || 'Unknown'}</TableCell>
-                  <TableCell>{formatDate(subnode.updated_at)}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end space-x-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => navigate(`/subnodes/${subnode.id}`)}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      ) : (
+      {viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {paginatedSubnodes.map((subnode) => (
             <Card key={subnode.id} className="bg-card border-border">
@@ -271,6 +226,54 @@ export function SubnodesPage() {
               </CardContent>
             </Card>
           ))}
+        </div>
+      ) : (
+        <div className="border rounded-lg">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>SubNode Name</TableHead>
+                <TableHead>Node Family</TableHead>
+                <TableHead>Version</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Last Updated By</TableHead>
+                <TableHead>Last Updated At</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paginatedSubnodes.map((subnode) => (
+                <TableRow key={subnode.id}>
+                  <TableCell className="font-medium">{subnode.name}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{subnode.node_family_name || subnode.node_family}</Badge>
+                  </TableCell>
+                  <TableCell className="text-sm">{subnode.active_version || 'None'}</TableCell>
+                  <TableCell>
+                    <Badge 
+                      variant={getDeploymentBadge(subnode.active_version).variant}
+                      className={getDeploymentBadge(subnode.active_version).className}
+                    >
+                      {subnode.active_version ? "Active" : "Inactive"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{subnode.updated_by || 'Unknown'}</TableCell>
+                  <TableCell>{formatDate(subnode.updated_at)}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end space-x-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => navigate(`/subnodes/${subnode.id}`)}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       )}
 

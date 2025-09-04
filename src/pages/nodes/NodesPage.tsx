@@ -225,76 +225,42 @@ export function NodesPage() {
             </SelectContent>
           </Select>
           <Input
-            placeholder="🔍 Search nodes..."
+            placeholder="Search nodes..."
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
               setCurrentPage(1);
             }}
-            className="w-96"
+            className="max-w-sm"
           />
         </div>
         
         <div className="flex items-center space-x-2">
           <div className="flex border border-border rounded-md">
             <Button
-              onClick={() => setViewMode('list')}
-              variant={viewMode === 'list' ? 'default' : 'ghost'}
-              size="sm"
-              className="rounded-r-none"
-            >
-              <List className="h-4 w-4" />
-            </Button>
-            <Button
               onClick={() => setViewMode('grid')}
               variant={viewMode === 'grid' ? 'default' : 'ghost'}
               size="sm"
-              className="rounded-l-none"
+              className="rounded-r-none"
             >
               <Grid2X2 className="h-4 w-4" />
             </Button>
+            <Button
+              onClick={() => setViewMode('list')}
+              variant={viewMode === 'list' ? 'default' : 'ghost'}
+              size="sm"
+              className="rounded-l-none"
+            >
+              <List className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="text-sm text-muted-foreground">
+            Read-only view - Use DevTool for management operations
           </div>
         </div>
       </div>
 
-      {viewMode === 'list' ? (
-        <div className="border rounded-lg">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Created Date</TableHead>
-                <TableHead>Created By</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedNodes.map((node) => (
-                <TableRow key={node.id}>
-                  <TableCell className="font-medium">{node.name}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{node.is_deployed ? 'Deployed' : 'Draft'}</Badge>
-                  </TableCell>
-                  <TableCell>{new Date(node.created_at).toLocaleDateString()}</TableCell>
-                  <TableCell>{node.created_by || "System"}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end space-x-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => navigate(`/nodes/${node.id}`)}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      ) : (
+      {viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {paginatedNodes.map((node) => (
             <Card key={node.id} className="bg-card border-border">
@@ -342,6 +308,43 @@ export function NodesPage() {
               </CardContent>
             </Card>
           ))}
+        </div>
+      ) : (
+        <div className="border rounded-lg">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Created Date</TableHead>
+                <TableHead>Created By</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paginatedNodes.map((node) => (
+                <TableRow key={node.id}>
+                  <TableCell className="font-medium">{node.name}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{node.is_deployed ? 'Deployed' : 'Draft'}</Badge>
+                  </TableCell>
+                  <TableCell>{new Date(node.created_at).toLocaleDateString()}</TableCell>
+                  <TableCell>{node.created_by || "System"}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end space-x-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => navigate(`/nodes/${node.id}`)}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       )}
 

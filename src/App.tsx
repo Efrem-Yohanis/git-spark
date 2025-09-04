@@ -32,6 +32,10 @@ import { NodeReportPage } from "@/pages/reports/NodeReportPage";
 import { FlowAlertPage } from "@/pages/alerts/FlowAlertPage";
 import { NodeAlertPage } from "@/pages/alerts/NodeAlertPage";
 import { DevToolPage } from "@/pages/DevToolPage";
+import { MediationFlowDetailPage } from "@/pages/mediations/MediationFlowDetailPage";
+import { ChargingMediationPage } from "@/pages/mediations/ChargingMediationPage";
+import { ConvergentMediationPage } from "@/pages/mediations/ConvergentMediationPage";
+import { NCCMediationPage } from "@/pages/mediations/NCCMediationPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -75,6 +79,12 @@ const App = () => (
               <Route path="/alerts/flows" element={<FlowAlertPage />} />
               <Route path="/alerts/nodes" element={<NodeAlertPage />} />
               <Route path="/devtool" element={<DevToolPage />} />
+          <Route path="/mediations/charging" element={<ChargingMediationPage />} />
+          <Route path="/mediations/convergent" element={<ConvergentMediationPage />} />
+          <Route path="/mediations/ncc" element={<NCCMediationPage />} />
+          <Route path="/mediations/charging/flow/:flowId" element={<MediationFlowDetailPage />} />
+          <Route path="/mediations/convergent/flow/:flowId" element={<MediationFlowDetailPage />} />
+          <Route path="/mediations/ncc/flow/:flowId" element={<MediationFlowDetailPage />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

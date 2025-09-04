@@ -225,39 +225,82 @@ export function ParametersPage() {
             </SelectContent>
           </Select>
           <Input
-            placeholder="🔍 Search parameters..."
+            placeholder="Search parameters..."
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
               setCurrentPage(1);
             }}
-            className="w-96"
+            className="max-w-sm"
           />
         </div>
         
         <div className="flex items-center space-x-2">
           <div className="flex border border-border rounded-md">
             <Button
-              onClick={() => setViewMode('list')}
-              variant={viewMode === 'list' ? 'default' : 'ghost'}
-              size="sm"
-              className="rounded-r-none"
-            >
-              <List className="h-4 w-4" />
-            </Button>
-            <Button
               onClick={() => setViewMode('grid')}
               variant={viewMode === 'grid' ? 'default' : 'ghost'}
               size="sm"
-              className="rounded-l-none"
+              className="rounded-r-none"
             >
               <Grid2X2 className="h-4 w-4" />
             </Button>
+            <Button
+              onClick={() => setViewMode('list')}
+              variant={viewMode === 'list' ? 'default' : 'ghost'}
+              size="sm"
+              className="rounded-l-none"
+            >
+              <List className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="text-sm text-muted-foreground">
+            Read-only view - Use DevTool for management operations
           </div>
         </div>
       </div>
 
-      {viewMode === 'list' ? (
+      {viewMode === 'grid' ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {paginatedParameters.map((param) => (
+            <Card key={param.id} className="bg-card border-border">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-foreground text-sm flex items-center justify-between">
+                  {param.key}
+                  <Badge variant={param.is_active ? "default" : "secondary"} className="text-xs">
+                    {param.is_active ? 'Active' : 'Inactive'}
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="grid grid-cols-1 gap-2 text-xs">
+                  <div className="text-muted-foreground">
+                    <span className="font-medium">Default Value:</span> 
+                    <span className="ml-1 font-mono">{param.default_value || 'None'}</span>
+                  </div>
+                </div>
+                
+                <div className="pt-2 border-t border-border flex justify-between items-center">
+                  <div className="text-xs font-medium text-foreground">Actions:</div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="bg-background border border-border shadow-lg z-50">
+                      <DropdownMenuItem onClick={() => navigate(`/parameters/${param.id}`)}>
+                        <Eye className="h-4 w-4 mr-2" />
+                        View
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
         <div className="border rounded-lg">
           <Table>
             <TableHeader>
@@ -301,46 +344,6 @@ export function ParametersPage() {
               ))}
             </TableBody>
           </Table>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {paginatedParameters.map((param) => (
-            <Card key={param.id} className="bg-card border-border">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-foreground text-sm flex items-center justify-between">
-                  {param.key}
-                  <Badge variant={param.is_active ? "default" : "secondary"} className="text-xs">
-                    {param.is_active ? 'Active' : 'Inactive'}
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="grid grid-cols-1 gap-2 text-xs">
-                  <div className="text-muted-foreground">
-                    <span className="font-medium">Default Value:</span> 
-                    <span className="ml-1 font-mono">{param.default_value || 'None'}</span>
-                  </div>
-                </div>
-                
-                <div className="pt-2 border-t border-border flex justify-between items-center">
-                  <div className="text-xs font-medium text-foreground">Actions:</div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="bg-background border border-border shadow-lg z-50">
-                      <DropdownMenuItem onClick={() => navigate(`/parameters/${param.id}`)}>
-                        <Eye className="h-4 w-4 mr-2" />
-                        View
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
         </div>
       )}
 
