@@ -35,6 +35,7 @@ import { MediationFlowDetailPage } from "@/pages/mediations/MediationFlowDetailP
 import { ChargingMediationPage } from "@/pages/mediations/ChargingMediationPage";
 import { ConvergentMediationPage } from "@/pages/mediations/ConvergentMediationPage";
 import { NCCMediationPage } from "@/pages/mediations/NCCMediationPage";
+import { StreamDetailPage } from "@/pages/StreamDetailPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -77,6 +78,7 @@ const App = () => (
               <Route path="/alerts/flows" element={<FlowAlertPage />} />
               <Route path="/alerts/nodes" element={<NodeAlertPage />} />
               <Route path="/devtool" element={<DevToolPage />} />
+              <Route path="/streams/:streamId" element={<StreamDetailPage />} />
           <Route path="/mediations/charging" element={<ChargingMediationPage />} />
           <Route path="/mediations/convergent" element={<ConvergentMediationPage />} />
           <Route path="/mediations/ncc" element={<NCCMediationPage />} />

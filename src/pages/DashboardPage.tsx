@@ -326,28 +326,8 @@ export function DashboardPage() {
                 </div>
               </div>
               
-              {/* Dashboard Controls */}
+              {/* Dashboard Controls - Removed as requested */}
               <div className="flex flex-wrap items-center gap-2">
-                <Button variant="outline" size="sm" className="h-9">
-                  <Square className="h-4 w-4 mr-2" />
-                  Stop
-                </Button>
-                <Button variant="outline" size="sm" className="h-9">
-                  <Play className="h-4 w-4 mr-2" />
-                  Start
-                </Button>
-                <Button variant="outline" size="sm" className="h-9">
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Restart
-                </Button>
-                <Button variant="outline" size="sm" className="h-9">
-                  <EyeOff className="h-4 w-4 mr-2" />
-                  Hide Stream
-                </Button>
-                <Button variant="outline" size="sm" className="h-9">
-                  <StickyNote className="h-4 w-4 mr-2" />
-                  Add Note
-                </Button>
                 <Button
                   variant="outline"
                   size="sm"
@@ -446,7 +426,8 @@ export function DashboardPage() {
               {streamsData.map((stream) => (
                 <div 
                   key={stream.id} 
-                  className="grid grid-cols-6 gap-4 items-center py-3 border-b border-border/50 hover:bg-muted/30 transition-colors"
+                  className="grid grid-cols-6 gap-4 items-center py-3 border-b border-border/50 hover:bg-muted/30 transition-colors cursor-pointer"
+                  onClick={() => navigate(`/streams/${stream.id}`)}
                 >
                   <div className="col-span-2 font-medium text-foreground">
                     {stream.name}
@@ -475,55 +456,7 @@ export function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Peak Streams */}
-        <Card className="bg-card/50 backdrop-blur-sm border-border/50 shadow-subtle">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-primary" />
-              Peak Performance Streams
-            </CardTitle>
-            <CardDescription>Streams with highest activity and uptime</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-3">
-              {peakStreams.map((stream, index) => (
-                <Card key={stream.name} className="border-border/50 bg-gradient-to-br from-card to-card/50">
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <div className="p-1.5 bg-primary/10 rounded-md">
-                          <Zap className="h-4 w-4 text-primary" />
-                        </div>
-                        <Badge variant="outline" className="text-xs">
-                          #{index + 1}
-                        </Badge>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="font-medium text-sm leading-tight">
-                        {stream.name}
-                      </div>
-                      <div className="grid grid-cols-2 gap-3 text-xs">
-                        <div>
-                          <div className="text-muted-foreground">Throughput</div>
-                          <div className="font-medium text-primary">{stream.throughput}</div>
-                        </div>
-                        <div>
-                          <div className="text-muted-foreground">Uptime</div>
-                          <div className="font-medium">{stream.uptime}</div>
-                        </div>
-                        <div className="col-span-2">
-                          <div className="text-muted-foreground">Error Rate</div>
-                          <div className="font-medium text-success">{stream.errorRate}</div>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        {/* Peak Performance Streams section removed as requested */}
       </div>
     </div>
   );
