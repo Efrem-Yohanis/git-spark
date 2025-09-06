@@ -88,7 +88,7 @@ export function FlowAlertPage() {
   const totalAlerts = alerts.length;
 
   return (
-    <main className="container mx-auto p-6 space-y-8">
+    <main className="w-full p-6 space-y-8">
       {/* Enhanced Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
