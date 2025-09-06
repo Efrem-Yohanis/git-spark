@@ -269,8 +269,8 @@ export function FlowAlertPage() {
                 </div>
               </div>
               
-              <Card className="border-0 shadow-xl">
-                <CardHeader className="bg-gradient-to-r from-muted/50 to-background">
+              <Card className="border">
+                <CardHeader className="bg-muted/50">
                   <CardTitle className="flex items-center gap-2">
                     <AlertTriangle className="h-5 w-5 text-destructive" />
                     Active Alert Details
@@ -326,8 +326,8 @@ export function FlowAlertPage() {
             </TabsContent>
 
             <TabsContent value="all" className="space-y-6">
-              <Card className="border-0 shadow-xl">
-                <CardHeader className="bg-gradient-to-r from-muted/50 to-background">
+              <Card className="border">
+                <CardHeader className="bg-muted/50">
                   <CardTitle className="flex items-center gap-2">
                     <Shield className="h-5 w-5 text-primary" />
                     Complete Alert History ({totalAlerts})
