@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Progress } from "@/components/ui/progress";
+import { FlowPipeline } from "@/components/FlowPipeline";
 import { 
   ArrowLeft,
   Play, 
@@ -335,72 +335,7 @@ export function StreamDetailPage() {
           </CardHeader>
           <CardContent>
             {viewMode === "graph" ? (
-              <div className="relative h-96 bg-muted/20 rounded-lg overflow-hidden">
-                <svg className="w-full h-full">
-                  {/* Flow connections */}
-                  {nodesData.slice(0, -1).map((node, index) => {
-                    const nextNode = nodesData[index + 1];
-                    return (
-                      <line
-                        key={`connection-${index}`}
-                        x1={node.position.x + 60}
-                        y1={node.position.y}
-                        x2={nextNode.position.x - 60}
-                        y2={nextNode.position.y}
-                        stroke="hsl(var(--border))"
-                        strokeWidth="2"
-                        markerEnd="url(#arrowhead)"
-                      />
-                    );
-                  })}
-                  
-                  {/* Arrow marker */}
-                  <defs>
-                    <marker
-                      id="arrowhead"
-                      markerWidth="10"
-                      markerHeight="7"
-                      refX="10"
-                      refY="3.5"
-                      orient="auto"
-                    >
-                      <polygon
-                        points="0 0, 10 3.5, 0 7"
-                        fill="hsl(var(--border))"
-                      />
-                    </marker>
-                  </defs>
-
-                  {/* Nodes */}
-                  {nodesData.map((node) => (
-                    <g key={node.id}>
-                      <circle
-                        cx={node.position.x}
-                        cy={node.position.y}
-                        r="40"
-                        className={getNodeStatusColor(node.status)}
-                        strokeWidth="3"
-                      />
-                      <text
-                        x={node.position.x}
-                        y={node.position.y - 50}
-                        textAnchor="middle"
-                        className="text-xs font-medium fill-foreground"
-                      >
-                        {node.name}
-                      </text>
-                      <text
-                        x={node.position.x}
-                        y={node.position.y + 60}
-                        textAnchor="middle"
-                        className="text-xs fill-muted-foreground"
-                      >
-                        {node.type}
-                      </text>
-                    </g>
-                  ))}
-                </svg>
-              </div>
+              <FlowPipeline nodesData={nodesData} />
             ) : (
               <Table>
                 <TableHeader>
