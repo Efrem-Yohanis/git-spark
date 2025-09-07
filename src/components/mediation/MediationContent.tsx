@@ -130,16 +130,11 @@ export function MediationContent({ flows, basePath }: MediationContentProps) {
                 setSearchTerm(e.target.value);
                 setCurrentPage(1);
               }}
-              className="max-w-xs bg-background/70 border-border/60 focus:border-primary/50 focus:bg-background transition-all duration-200"
+              className="w-80 bg-background/70 border-border/60 focus:border-primary/50 focus:bg-background transition-all duration-200"
             />
           </div>
 
           <div className="flex items-center space-x-3">
-            <Button variant="outline" size="sm" className="border-border/60 hover:bg-primary/5">
-              <Download className="h-4 w-4 mr-2" />
-              Export
-            </Button>
-            
             <div className="flex border border-border/60 bg-background/50 backdrop-blur-sm">
               <Button
                 onClick={() => setViewMode("list")}
