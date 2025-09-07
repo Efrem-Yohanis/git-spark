@@ -128,8 +128,7 @@ export function PerformanceStats({
                 <Tooltip 
                   contentStyle={{
                     backgroundColor: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '6px'
+                    border: '1px solid hsl(var(--border))'
                   }}
                   formatter={(value) => [`${(value as number).toLocaleString()} records`, 'Records']}
                   labelFormatter={(label) => `${label} minutes`}
@@ -139,8 +138,8 @@ export function PerformanceStats({
                   dataKey="records" 
                   stroke="hsl(var(--primary))" 
                   strokeWidth={3}
-                  dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 6 }}
-                  activeDot={{ r: 8, stroke: 'hsl(var(--primary))', strokeWidth: 2 }}
+                  dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 0 }}
+                  activeDot={{ r: 0, stroke: 'hsl(var(--primary))', strokeWidth: 2 }}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -178,8 +177,7 @@ export function PerformanceStats({
                 <Tooltip 
                   contentStyle={{
                     backgroundColor: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '6px'
+                    border: '1px solid hsl(var(--border))'
                   }}
                   formatter={(value) => [`${(value as number).toLocaleString()}`, 'Records']}
                   labelFormatter={(label) => `Category: ${label}`}
@@ -187,7 +185,6 @@ export function PerformanceStats({
                 <Bar 
                   dataKey="count" 
                   fill="hsl(var(--primary))"
-                  radius={[4, 4, 0, 0]}
                 />
               </BarChart>
             </ResponsiveContainer>
@@ -206,7 +203,7 @@ export function PerformanceStats({
         <CardContent>
           <div className="space-y-4">
             {mockNodePerformance.map((node, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+              <div key={index} className="flex items-center justify-between p-3 bg-muted/30">
                 <div className="flex items-center gap-3">
                   <div className="font-medium">{node.name}</div>
                   <Badge 

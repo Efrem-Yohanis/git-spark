@@ -164,7 +164,7 @@ export function GeneralInfoPanel({
               </div>
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground bg-muted/30 p-3 rounded-md">
+            <p className="text-sm text-muted-foreground bg-muted/30 p-3">
               {description || "No description available"}
             </p>
           )}
