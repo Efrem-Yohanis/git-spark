@@ -351,40 +351,88 @@ export function DashboardPage() {
           </div>
         </div>
 
-        {/* Alerts Summary */}
-        <div className="grid gap-4 md:grid-cols-3">
+        {/* Summary Cards */}
+        <div className="grid gap-4 md:grid-cols-6">
+          <Card className="bg-success/5 border-success/20 shadow-subtle">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-success/10 rounded-lg">
+                  <Play className="h-5 w-5 text-success" />
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-success">
+                    {streamsData.filter(stream => stream.status === "RUNNING").length}
+                  </div>
+                  <div className="text-sm text-muted-foreground">All Running Streams</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
           <Card className="bg-destructive/5 border-destructive/20 shadow-subtle">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-destructive/10 rounded-lg">
-                  <AlertCircle className="h-5 w-5 text-destructive" />
+                  <Square className="h-5 w-5 text-destructive" />
                 </div>
                 <div>
                   <div className="text-2xl font-bold text-destructive">
-                    {alertsSummary.totalErrors.toLocaleString()}
+                    {streamsData.filter(stream => stream.status === "STOPPED").length}
+                  </div>
+                  <div className="text-sm text-muted-foreground">All Stopped Streams</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-primary/5 border-primary/20 shadow-subtle">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <Monitor className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-primary">
+                    {streamsData.length}
+                  </div>
+                  <div className="text-sm text-muted-foreground">All Streams</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-destructive/5 border-destructive/20 shadow-subtle">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-destructive/10 rounded-lg">
+                  <AlertTriangle className="h-5 w-5 text-destructive" />
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-destructive">
+                    22,088
                   </div>
                   <div className="text-sm text-muted-foreground">Total Errors</div>
                 </div>
               </div>
             </CardContent>
           </Card>
-          
+
           <Card className="bg-warning/5 border-warning/20 shadow-subtle">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-warning/10 rounded-lg">
-                  <AlertTriangle className="h-5 w-5 text-warning" />
+                  <AlertCircle className="h-5 w-5 text-warning" />
                 </div>
                 <div>
                   <div className="text-2xl font-bold text-warning">
-                    {alertsSummary.totalWarnings}
+                    237
                   </div>
                   <div className="text-sm text-muted-foreground">Total Warnings</div>
                 </div>
               </div>
             </CardContent>
           </Card>
-          
+
           <Card className="bg-info/5 border-info/20 shadow-subtle">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
@@ -393,7 +441,7 @@ export function DashboardPage() {
                 </div>
                 <div>
                   <div className="text-2xl font-bold text-info">
-                    {alertsSummary.totalInfo}
+                    72
                   </div>
                   <div className="text-sm text-muted-foreground">Info Messages</div>
                 </div>
@@ -405,53 +453,105 @@ export function DashboardPage() {
         {/* Streams Table */}
         <Card className="bg-card/50 backdrop-blur-sm border-border/50 shadow-subtle">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Monitor className="h-5 w-5 text-primary" />
-              Monitored Streams
-            </CardTitle>
-            <CardDescription>Real-time status of all active data streams</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {/* Table Header */}
-              <div className="grid grid-cols-6 gap-4 text-sm font-medium text-muted-foreground pb-2 border-b">
-                <div className="col-span-2">Stream Name</div>
-                <div>Errors / Warnings</div>
-                <div>Instances</div>
-                <div>Status</div>
-                <div>Throughput</div>
-              </div>
-              
-              {/* Stream Rows */}
-              {streamsData.map((stream) => (
-                <div 
-                  key={stream.id} 
-                  className="grid grid-cols-6 gap-4 items-center py-3 border-b border-border/50 hover:bg-muted/30 transition-colors cursor-pointer"
-                  onClick={() => navigate(`/streams/${stream.id}`)}
-                >
-                  <div className="col-span-2 font-medium text-foreground">
-                    {stream.name}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`font-medium ${stream.errors > 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
-                      {stream.errors.toLocaleString()}
-                    </span>
-                    <span className="text-muted-foreground">/</span>
-                    <span className={`font-medium ${stream.warnings > 0 ? 'text-warning' : 'text-muted-foreground'}`}>
-                      {stream.warnings}
-                    </span>
-                  </div>
-                  <div className="text-muted-foreground">
-                    {stream.instances}
-                  </div>
-                  <div>
-                    {getStatusBadge(stream.status)}
-                  </div>
-                  <div className="font-medium">
-                    {stream.throughput}
-                  </div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <CardTitle className="text-lg font-semibold">Streams</CardTitle>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <div className="flex items-center gap-2">
+                  <label htmlFor="status-filter" className="text-sm font-medium text-muted-foreground">
+                    Filter by:
+                  </label>
+                  <select 
+                    id="status-filter"
+                    className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                    defaultValue="all"
+                  >
+                    <option value="all">All Status</option>
+                    <option value="RUNNING">Running</option>
+                    <option value="STOPPED">Stopped</option>
+                    <option value="PARTIAL">Partial</option>
+                  </select>
                 </div>
-              ))}
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search flows..."
+                    className="h-9 w-full sm:w-64 rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                  />
+                </div>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-hidden rounded-lg border border-border">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/50 border-b border-border sticky top-0 z-10">
+                    <tr>
+                      <th className="text-left font-medium text-muted-foreground px-4 py-3">
+                        Stream Name
+                      </th>
+                      <th className="text-left font-medium text-muted-foreground px-4 py-3">
+                        Errors / Warnings  
+                      </th>
+                      <th className="text-left font-medium text-muted-foreground px-4 py-3">
+                        Instances
+                      </th>
+                      <th className="text-left font-medium text-muted-foreground px-4 py-3">
+                        Status
+                      </th>
+                      <th className="text-left font-medium text-muted-foreground px-4 py-3">
+                        Throughput
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {streamsData.slice(0, 10).map((stream) => (
+                      <tr 
+                        key={stream.id}
+                        className="hover:bg-muted/30 transition-colors cursor-pointer"
+                        onClick={() => navigate(`/streams/${stream.id}`)}
+                      >
+                        <td className="px-4 py-3 font-medium text-foreground">
+                          {stream.name}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <span className={`font-medium ${stream.errors > 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                              {stream.errors.toLocaleString()}
+                            </span>
+                            <span className="text-muted-foreground">/</span>
+                            <span className={`font-medium ${stream.warnings > 0 ? 'text-warning' : 'text-muted-foreground'}`}>
+                              {stream.warnings}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-muted-foreground">
+                          {stream.instances}
+                        </td>
+                        <td className="px-4 py-3">
+                          {getStatusBadge(stream.status)}
+                        </td>
+                        <td className="px-4 py-3 font-medium">
+                          {stream.throughput}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-muted/20">
+              <div className="text-sm text-muted-foreground">
+                Showing 1 to {streamsData.length} of {streamsData.length} flows
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" disabled>
+                  Previous
+                </Button>
+                <Button variant="outline" size="sm" disabled>
+                  Next
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
