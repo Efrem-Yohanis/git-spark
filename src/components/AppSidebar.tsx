@@ -1,4 +1,4 @@
-import { LayoutDashboard, TrendingUp, Users, Smartphone, Download, UserPlus, UserMinus, ArrowUpCircle, ChevronRight, Database, Settings, Megaphone, Headphones, Gavel, Moon, Lock, Building2, RefreshCw } from "lucide-react";
+import { LayoutDashboard, TrendingUp, Users, Smartphone, Download, UserPlus, UserMinus, ArrowUpCircle, ChevronRight, Database, Settings, Megaphone, Headphones, Gavel, Moon, Lock, Building2, RefreshCw, KeyRound, BarChart3 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Separator } from "@/components/ui/separator";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -130,7 +130,7 @@ export function AppSidebar() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
-              {/* Campaign Management - Collapsible (only when sidebar is open) */}
+              {/* Campaign Management - Collapsible with GA Pin Reset submenu */}
               {open ? (
                 <Collapsible className="group/collapsible">
                   <SidebarMenuItem>
@@ -160,6 +160,30 @@ export function AppSidebar() {
                             </NavLink>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
+                        {/* GA Pin Reset - Nested Collapsible */}
+                        <Collapsible className="group/nested">
+                          <SidebarMenuSubItem>
+                            <CollapsibleTrigger asChild>
+                              <SidebarMenuSubButton className="group relative overflow-hidden hover:bg-sidebar-accent/80 transition-all duration-300 w-full">
+                                <KeyRound className="h-3.5 w-3.5 transition-transform group-hover:scale-110" />
+                                <span className="text-xs">GA Pin Reset</span>
+                                <ChevronRight className="ml-auto h-3 w-3 transition-transform group-data-[state=open]/nested:rotate-90" />
+                              </SidebarMenuSubButton>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent>
+                              <SidebarMenuSub className="ml-3 border-l border-sidebar-border/50">
+                                <SidebarMenuSubItem className="animate-fade-in">
+                                  <SidebarMenuSubButton asChild className="group relative overflow-hidden hover:bg-sidebar-accent/80 transition-all duration-300">
+                                    <NavLink to="/campaigns/ga-pin-reset/pin-reset" className="relative z-10" activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium">
+                                      <Lock className="h-3 w-3 transition-transform group-hover:scale-110" />
+                                      <span className="text-xs">Pin Reset</span>
+                                    </NavLink>
+                                  </SidebarMenuSubButton>
+                                </SidebarMenuSubItem>
+                              </SidebarMenuSub>
+                            </CollapsibleContent>
+                          </SidebarMenuSubItem>
+                        </Collapsible>
                       </SidebarMenuSub>
                     </CollapsibleContent>
                   </SidebarMenuItem>
@@ -172,7 +196,7 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               )}
 
-              {/* Ops Support - Collapsible (only when sidebar is open) */}
+              {/* Ops Support - Collapsible with Dormant List and Dormant List Performance */}
               {open ? (
                 <Collapsible className="group/collapsible">
                   <SidebarMenuItem>
@@ -199,6 +223,14 @@ export function AppSidebar() {
                             <NavLink to="/ops-support/dormant-list" className="relative z-10" activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium">
                               <Moon className="h-3.5 w-3.5 transition-transform group-hover:scale-110" />
                               <span className="text-xs">Dormant List</span>
+                            </NavLink>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem className="animate-fade-in">
+                          <SidebarMenuSubButton asChild className="group relative overflow-hidden hover:bg-sidebar-accent/80 transition-all duration-300">
+                            <NavLink to="/ops-support/dormant-list-performance" className="relative z-10" activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium">
+                              <BarChart3 className="h-3.5 w-3.5 transition-transform group-hover:scale-110" />
+                              <span className="text-xs">Dormant List Performance</span>
                             </NavLink>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>

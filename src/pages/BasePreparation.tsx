@@ -6,15 +6,22 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Link, Calendar, Users, Clock, DollarSign, Target, Rocket, Gift, Smartphone, CreditCard, X, Database, Copy, Plus, ArrowRight } from "lucide-react";
+import { Link, Calendar, Users, Clock, DollarSign, Target, Rocket, Gift, Smartphone, CreditCard, X, Database, Copy, Plus, ArrowRight, Building2, Wallet } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { ActiveCustomersForm } from "@/components/base-preparation/ActiveCustomersForm";
+import { VlrAttachedForm } from "@/components/base-preparation/VlrAttachedForm";
+import { DateFormatForm } from "@/components/base-preparation/DateFormatForm";
+import { BalanceThresholdForm } from "@/components/base-preparation/BalanceThresholdForm";
+import { TargetedCustomersForm } from "@/components/base-preparation/TargetedCustomersForm";
+import { RewardedFromAccountForm } from "@/components/base-preparation/RewardedFromAccountForm";
 
 interface TableConfig {
   id: string;
   label: string;
   icon: any;
   borderColor: string;
-  fields: { [key: string]: string };
+  formType: string;
+  fields: any;
 }
 
 interface TableStatus {
@@ -32,16 +39,34 @@ interface JoinConfig {
 }
 
 const availableTables = [
-  { id: "vlr", label: "VLR ATTACHMENT", icon: Link, borderColor: "border-l-blue-500", alias: "vlr" },
-  { id: "registered", label: "REGISTERED BEFORE", icon: Calendar, borderColor: "border-l-purple-500", alias: "reg" },
-  { id: "active", label: "ACTIVE USERS", icon: Users, borderColor: "border-l-green-500", alias: "act" },
-  { id: "inactive", label: "INACTIVE USERS", icon: Clock, borderColor: "border-l-orange-500", alias: "inact" },
-  { id: "balance", label: "BALANCE THRESHOLD", icon: DollarSign, borderColor: "border-l-yellow-500", alias: "bal" },
-  { id: "targeted", label: "TARGETED USERS", icon: Target, borderColor: "border-l-red-500", alias: "tgt" },
-  { id: "rewarded", label: "REWARDED", icon: Gift, borderColor: "border-l-pink-500", alias: "rwd" },
-  { id: "gsm", label: "GSM USAGE", icon: Smartphone, borderColor: "border-l-cyan-500", alias: "gsm" },
-  { id: "topup", label: "MPESA TOP UP", icon: CreditCard, borderColor: "border-l-indigo-500", alias: "topup" },
+  { id: "active", label: "ACTIVE CUSTOMERS", icon: Users, borderColor: "border-l-green-500", alias: "act", formType: "active_customers" },
+  { id: "vlr", label: "VLR ATTACHED CUSTOMERS", icon: Link, borderColor: "border-l-blue-500", alias: "vlr", formType: "vlr_attached" },
+  { id: "registered", label: "REGISTERED MPESA", icon: Calendar, borderColor: "border-l-purple-500", alias: "reg", formType: "date_format" },
+  { id: "balance", label: "BALANCE THRESHOLD", icon: DollarSign, borderColor: "border-l-yellow-500", alias: "bal", formType: "balance_threshold" },
+  { id: "targeted", label: "TARGETED CUSTOMERS", icon: Target, borderColor: "border-l-red-500", alias: "tgt", formType: "targeted_customers" },
+  { id: "rewarded", label: "REWARDED CUSTOMERS", icon: Gift, borderColor: "border-l-pink-500", alias: "rwd", formType: "date_format" },
+  { id: "cbe_topup", label: "CBE TOP UP", icon: Building2, borderColor: "border-l-cyan-500", alias: "cbe", formType: "date_format" },
+  { id: "reward_from_account", label: "REWARD FROM ACCOUNT", icon: Wallet, borderColor: "border-l-indigo-500", alias: "rfa", formType: "reward_from_account" },
 ];
+
+const getInitialFields = (formType: string) => {
+  switch (formType) {
+    case "active_customers":
+      return { table_name: "", data_from: undefined, active_for: "" };
+    case "vlr_attached":
+      return { table_name: "", day_from: "", day_to: "" };
+    case "date_format":
+      return { table_name: "", data_format: "", date: undefined, date_start: undefined, date_end: undefined };
+    case "balance_threshold":
+      return { table_name: "", balance_threshold: "", comparison: "" };
+    case "targeted_customers":
+      return { table_name: "", data_from: undefined, targeted_for_last: "" };
+    case "reward_from_account":
+      return { table_name: "", account_number: "" };
+    default:
+      return {};
+  }
+};
 
 export default function BasePreparation() {
   const { toast } = useToast();
@@ -63,7 +88,6 @@ export default function BasePreparation() {
     const table = availableTables.find(t => t.id === selectedTableId);
     if (!table) return;
     
-    // Check if already added
     if (selectedTables.some(t => t.id === selectedTableId)) {
       toast({
         title: "Already Added",
@@ -75,7 +99,7 @@ export default function BasePreparation() {
 
     const newTable: TableConfig = {
       ...table,
-      fields: { field1: "", field2: "" }
+      fields: getInitialFields(table.formType)
     };
     
     setSelectedTables([...selectedTables, newTable]);
@@ -86,20 +110,38 @@ export default function BasePreparation() {
     setSelectedTables(selectedTables.filter(t => t.id !== tableId));
   };
 
-  const updateTableField = (tableId: string, fieldName: string, value: string) => {
+  const updateTableFields = (tableId: string, fields: any) => {
     setSelectedTables(selectedTables.map(table => 
-      table.id === tableId 
-        ? { ...table, fields: { ...table.fields, [fieldName]: value } }
-        : table
+      table.id === tableId ? { ...table, fields } : table
     ));
+  };
+
+  const getParametersSummary = (table: TableConfig) => {
+    const { fields, formType } = table;
+    switch (formType) {
+      case "active_customers":
+        return `${fields.table_name || "N/A"}, ${fields.active_for || "N/A"} days`;
+      case "vlr_attached":
+        return `${fields.table_name || "N/A"}, Days ${fields.day_from || "N/A"}-${fields.day_to || "N/A"}`;
+      case "date_format":
+        return `${fields.table_name || "N/A"}, ${fields.data_format || "N/A"}`;
+      case "balance_threshold":
+        return `${fields.table_name || "N/A"}, ${fields.comparison || "N/A"} ${fields.balance_threshold || "N/A"}`;
+      case "targeted_customers":
+        return `${fields.table_name || "N/A"}, ${fields.targeted_for_last || "N/A"} days`;
+      case "reward_from_account":
+        return `${fields.table_name || "N/A"}, Account: ${fields.account_number || "N/A"}`;
+      default:
+        return "N/A";
+    }
   };
 
   const getAllTables = () => {
     return selectedTables.map(table => ({
-      name: `${table.label.replace(/ /g, "_")}_${postfix}`,
+      name: table.fields.table_name || `${table.label.replace(/ /g, "_")}_${postfix}`,
       status: "pending" as const,
       time: 0,
-      parameters: `${table.fields.field1 || "N/A"}, ${table.fields.field2 || "N/A"}`
+      parameters: getParametersSummary(table)
     }));
   };
 
@@ -114,7 +156,6 @@ export default function BasePreparation() {
     }
 
     const tables = getAllTables();
-    // Add PIN RESET BASE as final table
     tables.push({
       name: `PIN_RESET_BASE_${postfix}`,
       status: "pending",
@@ -178,17 +219,16 @@ export default function BasePreparation() {
   const getStatusBadge = (status: TableStatus["status"]) => {
     switch (status) {
       case "completed":
-        return <Badge className="bg-green-500 hover:bg-green-600">🟢 Completed</Badge>;
+        return <Badge className="bg-green-500 hover:bg-green-600">Completed</Badge>;
       case "running":
-        return <Badge className="bg-yellow-500 hover:bg-yellow-600">🟡 Running</Badge>;
+        return <Badge className="bg-yellow-500 hover:bg-yellow-600">Running</Badge>;
       case "pending":
-        return <Badge variant="secondary">⚪ Pending</Badge>;
+        return <Badge variant="secondary">Pending</Badge>;
       case "error":
-        return <Badge variant="destructive">🔴 Error</Badge>;
+        return <Badge variant="destructive">Error</Badge>;
     }
   };
 
-  // SQL Builder functions
   const addJoin = () => {
     const newJoin: JoinConfig = {
       id: `join_${Date.now()}`,
@@ -227,7 +267,6 @@ export default function BasePreparation() {
 
     let sql = `SELECT \n  ${baseAlias}.*`;
     
-    // Add selected columns from joined tables
     joins.forEach(join => {
       const joinTable = availableTables.find(t => t.id === join.tableId);
       if (joinTable) {
@@ -237,7 +276,6 @@ export default function BasePreparation() {
 
     sql += `\nFROM ${baseTableName} ${baseAlias}`;
 
-    // Add joins
     joins.forEach(join => {
       const joinTable = availableTables.find(t => t.id === join.tableId);
       if (joinTable && join.joinKey) {
@@ -264,6 +302,28 @@ export default function BasePreparation() {
     });
   };
 
+  const renderTableForm = (table: TableConfig) => {
+    const { formType, fields, id } = table;
+    const updateFields = (newFields: any) => updateTableFields(id, newFields);
+
+    switch (formType) {
+      case "active_customers":
+        return <ActiveCustomersForm fields={fields} onChange={updateFields} disabled={isGenerating} />;
+      case "vlr_attached":
+        return <VlrAttachedForm fields={fields} onChange={updateFields} disabled={isGenerating} />;
+      case "date_format":
+        return <DateFormatForm fields={fields} onChange={updateFields} disabled={isGenerating} tableLabel={table.label} />;
+      case "balance_threshold":
+        return <BalanceThresholdForm fields={fields} onChange={updateFields} disabled={isGenerating} />;
+      case "targeted_customers":
+        return <TargetedCustomersForm fields={fields} onChange={updateFields} disabled={isGenerating} />;
+      case "reward_from_account":
+        return <RewardedFromAccountForm fields={fields} onChange={updateFields} disabled={isGenerating} />;
+      default:
+        return null;
+    }
+  };
+
   const completedTables = tableStatuses.filter(t => t.status === "completed").length;
   const availableToSelect = availableTables.filter(
     table => !selectedTables.some(st => st.id === table.id)
@@ -273,8 +333,8 @@ export default function BasePreparation() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-      <div className="container mx-auto p-6 space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 w-full">
+      <div className="w-full px-6 py-6 space-y-6">
         <div>
           <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
             Base Preparation Dashboard
@@ -335,7 +395,7 @@ export default function BasePreparation() {
           </Card>
 
           {selectedTables.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {selectedTables.map(table => {
                 const Icon = table.icon;
                 return (
@@ -356,27 +416,8 @@ export default function BasePreparation() {
                         </Button>
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div>
-                        <Label>Field 1</Label>
-                        <Input 
-                          type="text" 
-                          value={table.fields.field1} 
-                          onChange={(e) => updateTableField(table.id, "field1", e.target.value)}
-                          placeholder="Enter field 1"
-                          disabled={isGenerating}
-                        />
-                      </div>
-                      <div>
-                        <Label>Field 2</Label>
-                        <Input 
-                          type="text" 
-                          value={table.fields.field2} 
-                          onChange={(e) => updateTableField(table.id, "field2", e.target.value)}
-                          placeholder="Enter field 2"
-                          disabled={isGenerating}
-                        />
-                      </div>
+                    <CardContent>
+                      {renderTableForm(table)}
                     </CardContent>
                   </Card>
                 );
@@ -420,7 +461,7 @@ export default function BasePreparation() {
                     <CardContent className="pt-4">
                       <p className="text-sm text-muted-foreground">Overall Status</p>
                       <p className="text-lg font-semibold mt-1">
-                        {completedTables === tableStatuses.length ? "🟢 Complete" : "🟡 Running"}
+                        {completedTables === tableStatuses.length ? "Complete" : "Running"}
                       </p>
                     </CardContent>
                   </Card>
@@ -478,7 +519,6 @@ export default function BasePreparation() {
               <CardDescription>Create custom SQL queries by combining tables with different join types</CardDescription>
             </CardHeader>
             <CardContent className="pt-6 space-y-6">
-              {/* Base Table Selection */}
               <div>
                 <Label className="text-base font-semibold">Base Table (FROM)</Label>
                 <Select value={baseTable} onValueChange={setBaseTable}>
@@ -495,7 +535,6 @@ export default function BasePreparation() {
                 </Select>
               </div>
 
-              {/* Add Join Button */}
               {baseTable && (
                 <Button 
                   variant="outline" 
@@ -508,7 +547,6 @@ export default function BasePreparation() {
                 </Button>
               )}
 
-              {/* Join Cards */}
               {joins.length > 0 && (
                 <div className="space-y-4">
                   {joins.map((join, index) => {
@@ -518,7 +556,6 @@ export default function BasePreparation() {
                         <CardContent className="pt-4">
                           <div className="flex items-start justify-between gap-4">
                             <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
-                              {/* Join Type */}
                               <div>
                                 <Label className="text-sm">Join Type</Label>
                                 <Select 
@@ -543,7 +580,6 @@ export default function BasePreparation() {
                                 </Select>
                               </div>
 
-                              {/* Table Selection */}
                               <div>
                                 <Label className="text-sm">Table</Label>
                                 <Select 
@@ -565,7 +601,6 @@ export default function BasePreparation() {
                                 </Select>
                               </div>
 
-                              {/* Join Key */}
                               <div>
                                 <Label className="text-sm">Join Key</Label>
                                 <Input 
@@ -587,7 +622,6 @@ export default function BasePreparation() {
                             </Button>
                           </div>
                           
-                          {/* Visual Join Indicator */}
                           {joinTable && (
                             <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
                               <Badge variant="outline">{availableTables.find(t => t.id === baseTable)?.alias}</Badge>
@@ -607,7 +641,6 @@ export default function BasePreparation() {
                 </div>
               )}
 
-              {/* Generate SQL Button */}
               {baseTable && (
                 <Button 
                   onClick={generateSQL}
@@ -618,7 +651,6 @@ export default function BasePreparation() {
                 </Button>
               )}
 
-              {/* Generated SQL Output */}
               {generatedSQL && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
