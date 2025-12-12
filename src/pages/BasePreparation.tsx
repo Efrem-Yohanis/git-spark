@@ -488,23 +488,6 @@ export default function BasePreparation() {
             </div>
           )}
 
-          {selectedTables.length > 0 && (
-            <Card className="border-2">
-              <CardContent className="pt-6">
-                <Button 
-                  onClick={handleGenerate} 
-                  className="w-full h-14 text-lg gap-2"
-                  disabled={isGenerating}
-                >
-                  <Rocket className="h-5 w-5" />
-                  {isGenerating ? "GENERATING..." : "GENERATE ALL BASE TABLES"}
-                </Button>
-                <p className="text-center text-sm text-muted-foreground mt-2">
-                  Create {selectedTables.length + 1} table(s) with specified parameters
-                </p>
-              </CardContent>
-            </Card>
-          )}
 
           {isGenerating && (
             <Card className="border-2 shadow-elegant animate-fade-in">
@@ -827,15 +810,21 @@ export default function BasePreparation() {
                           <TableCell className="font-medium">{table.name}</TableCell>
                           <TableCell>
                             <div className="flex flex-wrap gap-1 max-w-[200px]">
-                              {table.columns.slice(0, 3).map((col, i) => (
-                                <Badge key={i} variant="secondary" className="text-xs">
-                                  {col}
-                                </Badge>
-                              ))}
-                              {table.columns.length > 3 && (
-                                <Badge variant="outline" className="text-xs">
-                                  +{table.columns.length - 3} more
-                                </Badge>
+                              {table.columns && table.columns.length > 0 ? (
+                                <>
+                                  {table.columns.slice(0, 3).map((col, i) => (
+                                    <Badge key={i} variant="secondary" className="text-xs">
+                                      {col}
+                                    </Badge>
+                                  ))}
+                                  {table.columns.length > 3 && (
+                                    <Badge variant="outline" className="text-xs">
+                                      +{table.columns.length - 3} more
+                                    </Badge>
+                                  )}
+                                </>
+                              ) : (
+                                <span className="text-muted-foreground text-xs">-</span>
                               )}
                             </div>
                           </TableCell>
