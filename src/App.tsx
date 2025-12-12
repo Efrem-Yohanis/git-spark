@@ -9,6 +9,7 @@ import MainLayout from "./pages/MainLayout";
 import Dashboard from "./pages/Dashboard";
 import MetricDetail from "./pages/MetricDetail";
 import BasePreparation from "./pages/BasePreparation";
+import TableDetailPage from "./pages/base-preparation/TableDetailPage";
 import CBECampaign from "./pages/campaigns/CBECampaign";
 import WinbackChurner from "./pages/campaigns/WinbackChurner";
 import PinReset from "./pages/campaigns/PinReset";
@@ -38,6 +39,7 @@ const App = () => (
               <Route index element={<Dashboard />} />
               <Route path="metric/:metricId" element={<MetricDetail />} />
               <Route path="base-preparation" element={<BasePreparation />} />
+              <Route path="base-preparation/table/:tableName" element={<TableDetailPage />} />
               <Route path="campaigns/cbe" element={<CBECampaign />} />
               <Route path="campaigns/winback" element={<WinbackChurner />} />
               <Route path="campaigns/ga-pin-reset/pin-reset" element={<PinReset />} />
