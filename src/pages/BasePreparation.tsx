@@ -1,29 +1,32 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Link, Calendar, Users, Clock, DollarSign, Target, Rocket, Gift, X, Database, Copy, Plus, ArrowRight, Building2, Wallet, Eye, Hash, Columns } from "lucide-react";
+import { Calendar as CalendarIcon, Users, Clock, DollarSign, Target, Gift, CreditCard, X, Rocket, Wallet, Building } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { ActiveCustomersForm } from "@/components/base-preparation/ActiveCustomersForm";
-import { VlrAttachedForm } from "@/components/base-preparation/VlrAttachedForm";
-import { DateFormatForm } from "@/components/base-preparation/DateFormatForm";
-import { BalanceThresholdForm } from "@/components/base-preparation/BalanceThresholdForm";
-import { TargetedCustomersForm } from "@/components/base-preparation/TargetedCustomersForm";
-import { RewardedFromAccountForm } from "@/components/base-preparation/RewardedFromAccountForm";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+
+interface TableFieldConfig {
+  name: string;
+  type: "text" | "number" | "date" | "dropdown" | "date-conditional";
+  label: string;
+  required: boolean;
+  placeholder?: string;
+  options?: string[];
+}
 
 interface TableConfig {
   id: string;
   label: string;
   icon: any;
   borderColor: string;
-  formType: string;
-  fields: any;
+  fields: TableFieldConfig[];
+  values: Record<string, any>;
 }
 
 interface TableStatus {
@@ -31,63 +34,106 @@ interface TableStatus {
   status: "pending" | "running" | "completed" | "error";
   time: number;
   parameters: string;
-  columns: string[];
-  rowCount: number;
 }
 
-interface JoinConfig {
-  id: string;
-  tableId: string;
-  joinType: "JOIN" | "LEFT JOIN";
-  joinKey: string;
-}
-
-const availableTables = [
-  { id: "active", label: "ACTIVE CUSTOMERS", icon: Users, borderColor: "border-l-green-500", alias: "act", formType: "active_customers", columns: ["msisdn", "activation_date", "last_activity", "status"] },
-  { id: "vlr", label: "VLR ATTACHED CUSTOMERS", icon: Link, borderColor: "border-l-blue-500", alias: "vlr", formType: "vlr_attached", columns: ["msisdn", "vlr_id", "attach_date", "detach_date"] },
-  { id: "registered", label: "REGISTERED MPESA", icon: Calendar, borderColor: "border-l-purple-500", alias: "reg", formType: "date_format", columns: ["msisdn", "registration_date", "kyc_status"] },
-  { id: "balance", label: "BALANCE THRESHOLD", icon: DollarSign, borderColor: "border-l-yellow-500", alias: "bal", formType: "balance_threshold", columns: ["msisdn", "balance", "last_update"] },
-  { id: "targeted", label: "TARGETED CUSTOMERS", icon: Target, borderColor: "border-l-red-500", alias: "tgt", formType: "targeted_customers", columns: ["msisdn", "campaign_id", "target_date"] },
-  { id: "rewarded", label: "REWARDED CUSTOMERS", icon: Gift, borderColor: "border-l-pink-500", alias: "rwd", formType: "date_format", columns: ["msisdn", "reward_date", "reward_amount"] },
-  { id: "cbe_topup", label: "CBE TOP UP", icon: Building2, borderColor: "border-l-cyan-500", alias: "cbe", formType: "date_format", columns: ["msisdn", "topup_date", "amount", "channel"] },
-  { id: "reward_from_account", label: "REWARD FROM ACCOUNT", icon: Wallet, borderColor: "border-l-indigo-500", alias: "rfa", formType: "reward_from_account", columns: ["msisdn", "account_number", "reward_date"] },
+const availableTables: { id: string; label: string; icon: any; borderColor: string; fields: TableFieldConfig[] }[] = [
+  { 
+    id: "active_customers", 
+    label: "ACTIVE CUSTOMERS", 
+    icon: Users, 
+    borderColor: "border-l-green-500",
+    fields: [
+      { name: "table_name", type: "text", label: "Table Name", required: true, placeholder: "e.g., active_customers_jan_2024" },
+      { name: "data_from", type: "date", label: "Data From (End Date)", required: true },
+      { name: "active_for", type: "number", label: "Active For (Days)", required: true, placeholder: "e.g., 30" },
+    ]
+  },
+  { 
+    id: "vlr_attached_customers", 
+    label: "VLR ATTACHED CUSTOMERS", 
+    icon: Clock, 
+    borderColor: "border-l-blue-500",
+    fields: [
+      { name: "table_name", type: "text", label: "Table Name", required: true, placeholder: "e.g., vlr_attached_customers" },
+      { name: "day_from", type: "number", label: "Day From", required: true, placeholder: "e.g., 0" },
+      { name: "day_to", type: "number", label: "Day To", required: true, placeholder: "e.g., 10" },
+    ]
+  },
+  { 
+    id: "registered_mpesa", 
+    label: "REGISTERED MPESA", 
+    icon: Building, 
+    borderColor: "border-l-purple-500",
+    fields: [
+      { name: "table_name", type: "text", label: "Table Name", required: true, placeholder: "e.g., registered_mpesa" },
+      { name: "data_format", type: "dropdown", label: "Data Format", required: true, options: ["before", "after", "date_range"] },
+      { name: "date", type: "date-conditional", label: "Date", required: true },
+    ]
+  },
+  { 
+    id: "balance_threshold", 
+    label: "BALANCE THRESHOLD", 
+    icon: DollarSign, 
+    borderColor: "border-l-yellow-500",
+    fields: [
+      { name: "table_name", type: "text", label: "Table Name", required: true, placeholder: "e.g., balance_threshold_10" },
+      { name: "balance_threshold", type: "number", label: "Balance Threshold", required: true, placeholder: "e.g., 10" },
+      { name: "comparison", type: "dropdown", label: "Comparison", required: true, options: ["equal to", "greater than or equal to", "less than or equal to", "greater than", "less than", "not equal to"] },
+    ]
+  },
+  { 
+    id: "targeted_customers", 
+    label: "TARGETED CUSTOMERS", 
+    icon: Target, 
+    borderColor: "border-l-red-500",
+    fields: [
+      { name: "table_name", type: "text", label: "Table Name", required: true, placeholder: "e.g., targeted_customers_jan" },
+      { name: "data_from", type: "date", label: "Data From", required: true },
+      { name: "targeted_for_last", type: "number", label: "Targeted For Last (Days)", required: true, placeholder: "e.g., 30" },
+    ]
+  },
+  { 
+    id: "rewarded_customers", 
+    label: "REWARDED CUSTOMERS", 
+    icon: Gift, 
+    borderColor: "border-l-pink-500",
+    fields: [
+      { name: "table_name", type: "text", label: "Table Name", required: true, placeholder: "e.g., rewarded_customers" },
+      { name: "data_format", type: "dropdown", label: "Data Format", required: true, options: ["before", "after", "date_range"] },
+      { name: "date", type: "date-conditional", label: "Date", required: true },
+    ]
+  },
+  { 
+    id: "cbe_topup", 
+    label: "CBE TOP UP", 
+    icon: CreditCard, 
+    borderColor: "border-l-indigo-500",
+    fields: [
+      { name: "table_name", type: "text", label: "Table Name", required: true, placeholder: "e.g., cbe_topup_customers" },
+      { name: "data_format", type: "dropdown", label: "Data Format", required: true, options: ["before", "after", "date_range"] },
+      { name: "date", type: "date-conditional", label: "Date", required: true },
+    ]
+  },
+  { 
+    id: "rewarded_from_account", 
+    label: "REWARDED FROM ACCOUNT", 
+    icon: Wallet, 
+    borderColor: "border-l-cyan-500",
+    fields: [
+      { name: "table_name", type: "text", label: "Table Name", required: true, placeholder: "e.g., rewarded_from_account_list" },
+      { name: "account_number", type: "text", label: "Account Number", required: true, placeholder: "e.g., 9000069" },
+    ]
+  },
 ];
-
-const getInitialFields = (formType: string) => {
-  switch (formType) {
-    case "active_customers":
-      return { table_name: "", data_from: undefined, active_for: "" };
-    case "vlr_attached":
-      return { table_name: "", day_from: "", day_to: "" };
-    case "date_format":
-      return { table_name: "", data_format: "", date: undefined, date_start: undefined, date_end: undefined };
-    case "balance_threshold":
-      return { table_name: "", balance_threshold: "", comparison: "" };
-    case "targeted_customers":
-      return { table_name: "", data_from: undefined, targeted_for_last: "" };
-    case "reward_from_account":
-      return { table_name: "", account_number: "" };
-    default:
-      return {};
-  }
-};
 
 export default function BasePreparation() {
   const { toast } = useToast();
-  const navigate = useNavigate();
   const [postfix, setPostfix] = useState("NOV29");
   const [selectedTableId, setSelectedTableId] = useState<string>("");
   const [selectedTables, setSelectedTables] = useState<TableConfig[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [startTime, setStartTime] = useState<number>(0);
   const [tableStatuses, setTableStatuses] = useState<TableStatus[]>([]);
-  const [generatedTables, setGeneratedTables] = useState<TableStatus[]>([]);
-  
-  // SQL Builder state
-  const [baseTable, setBaseTable] = useState<string>("");
-  const [joins, setJoins] = useState<JoinConfig[]>([]);
-  const [generatedSQL, setGeneratedSQL] = useState<string>("");
-  const [sqlTableName, setSqlTableName] = useState<string>("");
 
   const handleAddTable = () => {
     if (!selectedTableId) return;
@@ -104,9 +150,18 @@ export default function BasePreparation() {
       return;
     }
 
+    const initialValues: Record<string, any> = {};
+    table.fields.forEach(field => {
+      if (field.type === "date-conditional") {
+        initialValues[field.name] = { start: undefined, end: undefined, single: undefined };
+      } else {
+        initialValues[field.name] = "";
+      }
+    });
+
     const newTable: TableConfig = {
       ...table,
-      fields: getInitialFields(table.formType)
+      values: initialValues
     };
     
     setSelectedTables([...selectedTables, newTable]);
@@ -115,54 +170,43 @@ export default function BasePreparation() {
 
   const handleRemoveTable = (tableId: string) => {
     setSelectedTables(selectedTables.filter(t => t.id !== tableId));
-    // Also remove from SQL builder if it was selected
-    if (baseTable === tableId) {
-      setBaseTable("");
-      setJoins([]);
-      setGeneratedSQL("");
-    }
-    setJoins(joins.filter(j => j.tableId !== tableId));
   };
 
-  const updateTableFields = (tableId: string, fields: any) => {
+  const updateTableField = (tableId: string, fieldName: string, value: any) => {
     setSelectedTables(selectedTables.map(table => 
-      table.id === tableId ? { ...table, fields } : table
+      table.id === tableId 
+        ? { ...table, values: { ...table.values, [fieldName]: value } }
+        : table
     ));
   };
 
-  const getParametersSummary = (table: TableConfig) => {
-    const { fields, formType } = table;
-    switch (formType) {
-      case "active_customers":
-        return `${fields.table_name || "N/A"}, ${fields.active_for || "N/A"} days`;
-      case "vlr_attached":
-        return `${fields.table_name || "N/A"}, Days ${fields.day_from || "N/A"}-${fields.day_to || "N/A"}`;
-      case "date_format":
-        return `${fields.table_name || "N/A"}, ${fields.data_format || "N/A"}`;
-      case "balance_threshold":
-        return `${fields.table_name || "N/A"}, ${fields.comparison || "N/A"} ${fields.balance_threshold || "N/A"}`;
-      case "targeted_customers":
-        return `${fields.table_name || "N/A"}, ${fields.targeted_for_last || "N/A"} days`;
-      case "reward_from_account":
-        return `${fields.table_name || "N/A"}, Account: ${fields.account_number || "N/A"}`;
-      default:
-        return "N/A";
-    }
-  };
-
-  const getTableColumns = (tableId: string) => {
-    const table = availableTables.find(t => t.id === tableId);
-    return table?.columns || [];
+  const getTableParameters = (table: TableConfig): string => {
+    return table.fields
+      .map(field => {
+        const value = table.values[field.name];
+        if (field.type === "date") {
+          return value ? format(value, "yyyy-MM-dd") : "N/A";
+        }
+        if (field.type === "date-conditional") {
+          const dataFormat = table.values["data_format"];
+          if (dataFormat === "date_range") {
+            return value?.start && value?.end 
+              ? `${format(value.start, "yyyy-MM-dd")} to ${format(value.end, "yyyy-MM-dd")}`
+              : "N/A";
+          }
+          return value?.single ? format(value.single, "yyyy-MM-dd") : "N/A";
+        }
+        return value || "N/A";
+      })
+      .join(", ");
   };
 
   const getAllTables = () => {
     return selectedTables.map(table => ({
-      name: table.fields.table_name || `${table.label.replace(/ /g, "_")}_${postfix}`,
+      name: `${table.values.table_name || table.label.replace(/ /g, "_")}_${postfix}`,
       status: "pending" as const,
       time: 0,
-      parameters: getParametersSummary(table),
-      columns: getTableColumns(table.id),
-      rowCount: 0,
+      parameters: getTableParameters(table)
     }));
   };
 
@@ -177,18 +221,12 @@ export default function BasePreparation() {
     }
 
     const tables = getAllTables();
-    
-    // Add SQL builder table if configured
-    if (sqlTableName && baseTable) {
-      tables.push({
-        name: sqlTableName,
-        status: "pending",
-        time: 0,
-        parameters: "SQL Join Result",
-        columns: getJoinedColumns(),
-        rowCount: 0,
-      });
-    }
+    tables.push({
+      name: `PIN_RESET_BASE_${postfix}`,
+      status: "pending",
+      time: 0,
+      parameters: "All pre-requisite tables"
+    });
 
     setTableStatuses(tables);
     setIsGenerating(true);
@@ -199,26 +237,11 @@ export default function BasePreparation() {
       description: `Generating ${tables.length} base tables...`,
     });
 
-    simulateTableGeneration(tables);
+    simulateTableGeneration(tables.length);
   };
 
-  const getJoinedColumns = () => {
-    const baseTableData = availableTables.find(t => t.id === baseTable);
-    let columns = [...(baseTableData?.columns || [])];
-    
-    joins.forEach(join => {
-      const joinTable = availableTables.find(t => t.id === join.tableId);
-      if (joinTable) {
-        columns = [...columns, ...joinTable.columns.filter(c => !columns.includes(c))];
-      }
-    });
-    
-    return columns;
-  };
-
-  const simulateTableGeneration = (tables: TableStatus[]) => {
-    const completionTimes = tables.map(() => Math.floor(Math.random() * 10000) + 5000);
-    const rowCounts = tables.map(() => Math.floor(Math.random() * 500000) + 10000);
+  const simulateTableGeneration = (tableCount: number) => {
+    const completionTimes = Array(tableCount).fill(0).map(() => Math.floor(Math.random() * 10000) + 5000);
     
     completionTimes.forEach((time, index) => {
       setTimeout(() => {
@@ -242,24 +265,8 @@ export default function BasePreparation() {
           clearInterval(interval);
           setTableStatuses(prev => {
             const updated = [...prev];
-            updated[index] = { 
-              ...updated[index], 
-              status: "completed", 
-              time: time / 1000,
-              rowCount: rowCounts[index]
-            };
+            updated[index] = { ...updated[index], status: "completed", time: time / 1000 };
             return updated;
-          });
-
-          // Add to generated tables for tracking
-          setGeneratedTables(prev => {
-            const newTable = {
-              ...tables[index],
-              status: "completed" as const,
-              time: time / 1000,
-              rowCount: rowCounts[index]
-            };
-            return [...prev, newTable];
           });
 
           if (index === completionTimes.length - 1) {
@@ -277,108 +284,130 @@ export default function BasePreparation() {
   const getStatusBadge = (status: TableStatus["status"]) => {
     switch (status) {
       case "completed":
-        return <Badge className="bg-green-500 hover:bg-green-600">Completed</Badge>;
+        return <Badge className="bg-green-500 hover:bg-green-600">🟢 Completed</Badge>;
       case "running":
-        return <Badge className="bg-yellow-500 hover:bg-yellow-600">Running</Badge>;
+        return <Badge className="bg-yellow-500 hover:bg-yellow-600">🟡 Running</Badge>;
       case "pending":
-        return <Badge variant="secondary">Pending</Badge>;
+        return <Badge variant="secondary">⚪ Pending</Badge>;
       case "error":
-        return <Badge variant="destructive">Error</Badge>;
+        return <Badge variant="destructive">🔴 Error</Badge>;
     }
   };
 
-  const addJoin = () => {
-    const newJoin: JoinConfig = {
-      id: `join_${Date.now()}`,
-      tableId: "",
-      joinType: "JOIN",
-      joinKey: "msisdn",
-    };
-    setJoins([...joins, newJoin]);
-  };
+  const renderField = (table: TableConfig, field: TableFieldConfig) => {
+    const value = table.values[field.name];
 
-  const removeJoin = (joinId: string) => {
-    setJoins(joins.filter(j => j.id !== joinId));
-  };
-
-  const updateJoin = (joinId: string, field: keyof JoinConfig, value: string) => {
-    setJoins(joins.map(j => 
-      j.id === joinId ? { ...j, [field]: value } : j
-    ));
-  };
-
-  const generateSQL = () => {
-    if (!baseTable) {
-      toast({
-        title: "Select Base Table",
-        description: "Please select a base table first.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const baseTableConfig = selectedTables.find(t => t.id === baseTable);
-    if (!baseTableConfig) return;
-
-    const baseTableName = baseTableConfig.fields.table_name || `${baseTableConfig.label.replace(/ /g, "_")}_${postfix}`;
-    const baseTableData = availableTables.find(t => t.id === baseTable);
-    const baseAlias = baseTableData?.alias || "t1";
-
-    let sql = `SELECT \n  ${baseAlias}.*`;
-    
-    joins.forEach(join => {
-      const joinTableData = availableTables.find(t => t.id === join.tableId);
-      if (joinTableData) {
-        sql += `,\n  ${joinTableData.alias}.*`;
-      }
-    });
-
-    sql += `\nFROM ${baseTableName} ${baseAlias}`;
-
-    joins.forEach(join => {
-      const joinTableConfig = selectedTables.find(t => t.id === join.tableId);
-      const joinTableData = availableTables.find(t => t.id === join.tableId);
-      if (joinTableConfig && joinTableData && join.joinKey) {
-        const joinTableName = joinTableConfig.fields.table_name || `${joinTableConfig.label.replace(/ /g, "_")}_${postfix}`;
-        sql += `\n${join.joinType} ${joinTableName} ${joinTableData.alias}`;
-        sql += `\n  ON ${baseAlias}.${join.joinKey} = ${joinTableData.alias}.${join.joinKey}`;
-      }
-    });
-
-    sql += ";";
-    setGeneratedSQL(sql);
-    
-    toast({
-      title: "SQL Generated",
-      description: "Your SQL query has been generated successfully.",
-    });
-  };
-
-  const copySQL = () => {
-    navigator.clipboard.writeText(generatedSQL);
-    toast({
-      title: "Copied!",
-      description: "SQL copied to clipboard.",
-    });
-  };
-
-  const renderTableForm = (table: TableConfig) => {
-    const { formType, fields, id } = table;
-    const updateFields = (newFields: any) => updateTableFields(id, newFields);
-
-    switch (formType) {
-      case "active_customers":
-        return <ActiveCustomersForm fields={fields} onChange={updateFields} disabled={isGenerating} />;
-      case "vlr_attached":
-        return <VlrAttachedForm fields={fields} onChange={updateFields} disabled={isGenerating} />;
-      case "date_format":
-        return <DateFormatForm fields={fields} onChange={updateFields} disabled={isGenerating} tableLabel={table.label} />;
-      case "balance_threshold":
-        return <BalanceThresholdForm fields={fields} onChange={updateFields} disabled={isGenerating} />;
-      case "targeted_customers":
-        return <TargetedCustomersForm fields={fields} onChange={updateFields} disabled={isGenerating} />;
-      case "reward_from_account":
-        return <RewardedFromAccountForm fields={fields} onChange={updateFields} disabled={isGenerating} />;
+    switch (field.type) {
+      case "text":
+        return (
+          <Input 
+            type="text" 
+            value={value} 
+            onChange={(e) => updateTableField(table.id, field.name, e.target.value)}
+            placeholder={field.placeholder}
+            disabled={isGenerating}
+          />
+        );
+      case "number":
+        return (
+          <Input 
+            type="number" 
+            value={value} 
+            onChange={(e) => updateTableField(table.id, field.name, e.target.value)}
+            placeholder={field.placeholder}
+            disabled={isGenerating}
+          />
+        );
+      case "date":
+        return (
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="w-full justify-start text-left font-normal" disabled={isGenerating}>
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {value ? format(value, "PPP") : "Pick a date"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={value}
+                onSelect={(date) => updateTableField(table.id, field.name, date)}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+        );
+      case "dropdown":
+        return (
+          <Select value={value} onValueChange={(val) => updateTableField(table.id, field.name, val)} disabled={isGenerating}>
+            <SelectTrigger className="bg-background">
+              <SelectValue placeholder="Select an option..." />
+            </SelectTrigger>
+            <SelectContent className="bg-background z-50">
+              {field.options?.map(option => (
+                <SelectItem key={option} value={option}>{option}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        );
+      case "date-conditional":
+        const dataFormat = table.values["data_format"];
+        if (dataFormat === "date_range") {
+          return (
+            <div className="flex gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="flex-1 justify-start text-left font-normal" disabled={isGenerating}>
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {value?.start ? format(value.start, "PPP") : "Start date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={value?.start}
+                    onSelect={(date) => updateTableField(table.id, field.name, { ...value, start: date })}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="flex-1 justify-start text-left font-normal" disabled={isGenerating}>
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {value?.end ? format(value.end, "PPP") : "End date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={value?.end}
+                    onSelect={(date) => updateTableField(table.id, field.name, { ...value, end: date })}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          );
+        }
+        return (
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="w-full justify-start text-left font-normal" disabled={isGenerating}>
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {value?.single ? format(value.single, "PPP") : "Pick a date"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={value?.single}
+                onSelect={(date) => updateTableField(table.id, field.name, { ...value, single: date })}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+        );
       default:
         return null;
     }
@@ -388,16 +417,10 @@ export default function BasePreparation() {
   const availableToSelect = availableTables.filter(
     table => !selectedTables.some(st => st.id === table.id)
   );
-  
-  // Only selected tables are available for SQL builder
-  const availableForSQLBuilder = selectedTables;
-  const availableForJoin = selectedTables.filter(
-    table => table.id !== baseTable && !joins.some(j => j.tableId === table.id)
-  );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 w-full">
-      <div className="w-full px-6 py-6 space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+      <div className="container mx-auto p-6 space-y-6">
         <div>
           <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
             Base Preparation Dashboard
@@ -458,7 +481,7 @@ export default function BasePreparation() {
           </Card>
 
           {selectedTables.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {selectedTables.map(table => {
                 const Icon = table.icon;
                 return (
@@ -479,8 +502,13 @@ export default function BasePreparation() {
                         </Button>
                       </CardTitle>
                     </CardHeader>
-                    <CardContent>
-                      {renderTableForm(table)}
+                    <CardContent className="space-y-4">
+                      {table.fields.map(field => (
+                        <div key={field.name}>
+                          <Label>{field.label}{field.required && " *"}</Label>
+                          {renderField(table, field)}
+                        </div>
+                      ))}
                     </CardContent>
                   </Card>
                 );
@@ -488,6 +516,23 @@ export default function BasePreparation() {
             </div>
           )}
 
+          {selectedTables.length > 0 && (
+            <Card className="border-2">
+              <CardContent className="pt-6">
+                <Button 
+                  onClick={handleGenerate} 
+                  className="w-full h-14 text-lg gap-2"
+                  disabled={isGenerating}
+                >
+                  <Rocket className="h-5 w-5" />
+                  {isGenerating ? "GENERATING..." : "GENERATE ALL BASE TABLES"}
+                </Button>
+                <p className="text-center text-sm text-muted-foreground mt-2">
+                  Create {selectedTables.length + 1} table(s) with specified parameters
+                </p>
+              </CardContent>
+            </Card>
+          )}
 
           {isGenerating && (
             <Card className="border-2 shadow-elegant animate-fade-in">
@@ -507,7 +552,7 @@ export default function BasePreparation() {
                     <CardContent className="pt-4">
                       <p className="text-sm text-muted-foreground">Overall Status</p>
                       <p className="text-lg font-semibold mt-1">
-                        {completedTables === tableStatuses.length ? "Complete" : "Running"}
+                        {completedTables === tableStatuses.length ? "🟢 Complete" : "🟡 Running"}
                       </p>
                     </CardContent>
                   </Card>
@@ -550,305 +595,6 @@ export default function BasePreparation() {
                       </CardContent>
                     </Card>
                   ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* SQL Builder Section - Only visible when tables are selected */}
-          {selectedTables.length > 0 && (
-            <Card className="border-2 shadow-elegant">
-              <CardHeader className="border-b bg-gradient-to-r from-cyan-500/10 to-transparent">
-                <CardTitle className="flex items-center gap-2">
-                  <Database className="h-5 w-5" />
-                  SQL JOIN BUILDER
-                </CardTitle>
-                <CardDescription>Create custom SQL queries by combining your selected tables</CardDescription>
-              </CardHeader>
-              <CardContent className="pt-6 space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-base font-semibold">Result Table Name</Label>
-                    <Input
-                      value={sqlTableName}
-                      onChange={(e) => setSqlTableName(e.target.value.toUpperCase())}
-                      placeholder={`e.g., JOINED_BASE_${postfix}`}
-                      className="mt-2"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">Name for the joined result table</p>
-                  </div>
-                  <div>
-                    <Label className="text-base font-semibold">Base Table (FROM)</Label>
-                    <Select value={baseTable} onValueChange={setBaseTable}>
-                      <SelectTrigger className="mt-2 bg-background">
-                        <SelectValue placeholder="Select base table..." />
-                      </SelectTrigger>
-                      <SelectContent className="bg-background z-50">
-                        {availableForSQLBuilder.map(table => {
-                          const tableData = availableTables.find(t => t.id === table.id);
-                          return (
-                            <SelectItem key={table.id} value={table.id}>
-                              {table.fields.table_name || `${table.label.replace(/ /g, "_")}_${postfix}`}
-                            </SelectItem>
-                          );
-                        })}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                {baseTable && (
-                  <div>
-                    <Label className="text-base font-semibold">Add Tables (JOIN)</Label>
-                    <div className="flex gap-2 mt-2">
-                      <Button 
-                        variant="outline" 
-                        onClick={addJoin}
-                        disabled={availableForJoin.length === 0}
-                        className="gap-2"
-                      >
-                        <Plus className="h-4 w-4" />
-                        Add Join Table
-                      </Button>
-                      {availableForJoin.length === 0 && (
-                        <p className="text-sm text-muted-foreground self-center">All selected tables are already added</p>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {joins.length > 0 && (
-                  <div className="space-y-4">
-                    {joins.map((join) => {
-                      const joinTableConfig = selectedTables.find(t => t.id === join.tableId);
-                      const joinTableData = availableTables.find(t => t.id === join.tableId);
-                      return (
-                        <Card key={join.id} className={`border-l-4 ${join.joinType === "LEFT JOIN" ? "border-l-orange-500" : "border-l-green-500"}`}>
-                          <CardContent className="pt-4">
-                            <div className="flex items-start justify-between gap-4">
-                              <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div>
-                                  <Label className="text-sm">Join Type</Label>
-                                  <Select 
-                                    value={join.joinType} 
-                                    onValueChange={(value) => updateJoin(join.id, "joinType", value as "JOIN" | "LEFT JOIN")}
-                                  >
-                                    <SelectTrigger className="mt-1 bg-background">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent className="bg-background z-50">
-                                      <SelectItem value="JOIN">
-                                        <span className="flex items-center gap-2">
-                                          <Badge className="bg-green-500 text-xs">INNER JOIN</Badge>
-                                        </span>
-                                      </SelectItem>
-                                      <SelectItem value="LEFT JOIN">
-                                        <span className="flex items-center gap-2">
-                                          <Badge className="bg-orange-500 text-xs">LEFT JOIN</Badge>
-                                        </span>
-                                      </SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-
-                                <div>
-                                  <Label className="text-sm">Table</Label>
-                                  <Select 
-                                    value={join.tableId} 
-                                    onValueChange={(value) => updateJoin(join.id, "tableId", value)}
-                                  >
-                                    <SelectTrigger className="mt-1 bg-background">
-                                      <SelectValue placeholder="Select table..." />
-                                    </SelectTrigger>
-                                    <SelectContent className="bg-background z-50">
-                                      {selectedTables
-                                        .filter(t => t.id !== baseTable && !joins.some(j => j.id !== join.id && j.tableId === t.id))
-                                        .map(table => (
-                                          <SelectItem key={table.id} value={table.id}>
-                                            {table.fields.table_name || `${table.label.replace(/ /g, "_")}_${postfix}`}
-                                          </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-
-                                <div>
-                                  <Label className="text-sm">Join Key</Label>
-                                  <Input 
-                                    value={join.joinKey}
-                                    onChange={(e) => updateJoin(join.id, "joinKey", e.target.value)}
-                                    placeholder="e.g., msisdn"
-                                    className="mt-1"
-                                  />
-                                </div>
-                              </div>
-                              
-                              <Button 
-                                variant="ghost" 
-                                size="sm"
-                                onClick={() => removeJoin(join.id)}
-                                className="mt-6"
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </div>
-                            
-                            {joinTableData && (
-                              <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
-                                <Badge variant="outline">{availableTables.find(t => t.id === baseTable)?.alias}</Badge>
-                                <ArrowRight className="h-4 w-4" />
-                                <Badge variant="outline" className={join.joinType === "LEFT JOIN" ? "border-orange-500" : "border-green-500"}>
-                                  {join.joinType}
-                                </Badge>
-                                <ArrowRight className="h-4 w-4" />
-                                <Badge variant="outline">{joinTableData.alias}</Badge>
-                                <span className="ml-2">ON {join.joinKey}</span>
-                              </div>
-                            )}
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {baseTable && (
-                  <Button 
-                    onClick={generateSQL}
-                    variant="outline"
-                    className="gap-2"
-                  >
-                    <Database className="h-4 w-4" />
-                    Preview SQL
-                  </Button>
-                )}
-
-                {generatedSQL && (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-base font-semibold">Generated SQL</Label>
-                      <Button variant="outline" size="sm" onClick={copySQL} className="gap-2">
-                        <Copy className="h-4 w-4" />
-                        Copy
-                      </Button>
-                    </div>
-                    <Textarea 
-                      value={generatedSQL}
-                      readOnly
-                      className="font-mono text-sm min-h-[150px] bg-muted/50"
-                    />
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Generate Button */}
-          {selectedTables.length > 0 && (
-            <Card className="border-2">
-              <CardContent className="pt-6">
-                <Button 
-                  onClick={handleGenerate} 
-                  className="w-full h-14 text-lg gap-2"
-                  disabled={isGenerating}
-                >
-                  <Rocket className="h-5 w-5" />
-                  {isGenerating ? "GENERATING..." : "GENERATE ALL TABLES"}
-                </Button>
-                <p className="text-center text-sm text-muted-foreground mt-2">
-                  Create {selectedTables.length + (sqlTableName && baseTable ? 1 : 0)} table(s) with specified parameters
-                </p>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Table Generation Tracking */}
-          {generatedTables.length > 0 && (
-            <Card className="border-2 shadow-elegant">
-              <CardHeader className="border-b bg-gradient-to-r from-green-500/10 to-transparent">
-                <CardTitle className="flex items-center gap-2">
-                  <Database className="h-5 w-5" />
-                  TABLE GENERATION TRACKING
-                </CardTitle>
-                <CardDescription>History of all generated tables</CardDescription>
-              </CardHeader>
-              <CardContent className="pt-6">
-                <div className="rounded-lg border overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-muted/50">
-                        <TableHead className="font-semibold">
-                          <div className="flex items-center gap-2">
-                            <Database className="h-4 w-4" />
-                            Table Name
-                          </div>
-                        </TableHead>
-                        <TableHead className="font-semibold">
-                          <div className="flex items-center gap-2">
-                            <Columns className="h-4 w-4" />
-                            Columns
-                          </div>
-                        </TableHead>
-                        <TableHead className="font-semibold">
-                          <div className="flex items-center gap-2">
-                            <Clock className="h-4 w-4" />
-                            Time Taken
-                          </div>
-                        </TableHead>
-                        <TableHead className="font-semibold">
-                          <div className="flex items-center gap-2">
-                            <Hash className="h-4 w-4" />
-                            Row Count
-                          </div>
-                        </TableHead>
-                        <TableHead className="font-semibold text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {generatedTables.map((table, idx) => (
-                        <TableRow key={idx} className="hover:bg-muted/30">
-                          <TableCell className="font-medium">{table.name}</TableCell>
-                          <TableCell>
-                            <div className="flex flex-wrap gap-1 max-w-[200px]">
-                              {table.columns && table.columns.length > 0 ? (
-                                <>
-                                  {table.columns.slice(0, 3).map((col, i) => (
-                                    <Badge key={i} variant="secondary" className="text-xs">
-                                      {col}
-                                    </Badge>
-                                  ))}
-                                  {table.columns.length > 3 && (
-                                    <Badge variant="outline" className="text-xs">
-                                      +{table.columns.length - 3} more
-                                    </Badge>
-                                  )}
-                                </>
-                              ) : (
-                                <span className="text-muted-foreground text-xs">-</span>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{table.time.toFixed(1)}s</Badge>
-                          </TableCell>
-                          <TableCell>
-                            <span className="font-mono">{table.rowCount.toLocaleString()}</span>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => navigate(`/base-preparation/table/${encodeURIComponent(table.name)}`)}
-                              className="gap-2"
-                            >
-                              <Eye className="h-4 w-4" />
-                              View
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
                 </div>
               </CardContent>
             </Card>
