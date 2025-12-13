@@ -5,7 +5,8 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Calendar as CalendarIcon, Users, Clock, DollarSign, Target, Gift, CreditCard, X, Rocket, Wallet, Building } from "lucide-react";
+import { Calendar as CalendarIcon, Users, Clock, DollarSign, Target, Gift, CreditCard, X, Wallet, Building } from "lucide-react";
+import { BaseTableBuilder } from "@/components/base-preparation/BaseTableBuilder";
 import { useToast } from "@/hooks/use-toast";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -516,22 +517,12 @@ export default function BasePreparation() {
             </div>
           )}
 
+          {/* Base Table Builder - shows when tables are selected */}
           {selectedTables.length > 0 && (
-            <Card className="border-2">
-              <CardContent className="pt-6">
-                <Button 
-                  onClick={handleGenerate} 
-                  className="w-full h-14 text-lg gap-2"
-                  disabled={isGenerating}
-                >
-                  <Rocket className="h-5 w-5" />
-                  {isGenerating ? "GENERATING..." : "GENERATE ALL BASE TABLES"}
-                </Button>
-                <p className="text-center text-sm text-muted-foreground mt-2">
-                  Create {selectedTables.length + 1} table(s) with specified parameters
-                </p>
-              </CardContent>
-            </Card>
+            <BaseTableBuilder 
+              availableTables={selectedTables.map(t => `${t.values.table_name || t.label.replace(/ /g, "_")}_${postfix}`)}
+              postfix={postfix}
+            />
           )}
 
           {isGenerating && (
