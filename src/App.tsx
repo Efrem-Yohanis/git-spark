@@ -7,6 +7,7 @@ import MainLayout from "./pages/MainLayout";
 import Dashboard from "./pages/Dashboard";
 import MetricDetail from "./pages/MetricDetail";
 import BasePreparation from "./pages/BasePreparation";
+import TableDetailPage from "./pages/base-preparation/TableDetailPage";
 import CourtIssue from "./pages/ops-support/CourtIssue";
 import DormantList from "./pages/ops-support/DormantList";
 import Pinlock from "./pages/ops-support/Pinlock";
@@ -30,6 +31,7 @@ const App = () => (
             <Route index element={<Dashboard />} />
             <Route path="metric/:metricId" element={<MetricDetail />} />
             <Route path="base-preparation" element={<BasePreparation />} />
+            <Route path="base-preparation/table/:tableName" element={<TableDetailPage />} />
             <Route path="campaign/ccbe" element={<CCBECampaign />} />
             <Route path="campaign/ga-pin-reset" element={<GAPinResetCampaign />} />
             <Route path="campaign/won-back-churner" element={<WonBackChurner />} />
